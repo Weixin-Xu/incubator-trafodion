@@ -21,8 +21,8 @@
 
 ; Drvr35Adm.def : Declares the module parameters for the DLL.
 
-LIBRARY      "hpoadm03"
-DESCRIPTION  'hp_oadm Windows Dynamic Link Library'
+LIBRARY      "trafoadm03"
+DESCRIPTION  'traf_oadm Windows Dynamic Link Library'
 
 EXPORTS
     ; Explicit exports can go here

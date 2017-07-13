@@ -20,7 +20,7 @@
 ;// @@@ END COPYRIGHT @@@
 ; TCPIPV6.def : Declares the module parameters for the DLL.
 
-LIBRARY      "hp_tcpipv60300"
+LIBRARY      "traf_tcpipv60100"
 
 EXPORTS
 TCPIPInitIO

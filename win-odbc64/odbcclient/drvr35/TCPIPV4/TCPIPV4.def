@@ -20,7 +20,7 @@
 ;// @@@ END COPYRIGHT @@@
 ; TCPIPV4.def : Declares the module parameters for the DLL.
 
-LIBRARY      "hp_tcpipv40300"
+LIBRARY      "traf_tcpipv40100"
 
 EXPORTS
 TCPIPInitIO

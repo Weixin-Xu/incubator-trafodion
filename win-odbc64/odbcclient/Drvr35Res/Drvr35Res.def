@@ -21,8 +21,8 @@
 
 ; Drvr35Res.def : Declares the module parameters for the DLL.
 
-LIBRARY      "hp_ores0300"
-DESCRIPTION  'hp_ores0300 Windows Dynamic Link Library'
+LIBRARY      "traf_ores0100"
+DESCRIPTION  'traf_ores0100 Windows Dynamic Link Library'
 
 EXPORTS
     ; Explicit exports can go here
