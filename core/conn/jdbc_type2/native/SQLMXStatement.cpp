@@ -196,6 +196,16 @@ JNIEXPORT void JNICALL Java_org_apache_trafodion_jdbc_t2_SQLMXStatement_executeD
 		throwSQLException(jenv, PROGRAMMING_ERROR, NULL, "HY000", exception_.exception_nr);
 		break;
 	}
+
+    ERROR_DESC_def * stmt_error_desc_def = exception_.u.SQLError.errorList._buffer;
+    if (stmt_error_desc_def != NULL) {
+        int listLen = exception_.u.SQLError.errorList._length;
+        for (int i = 0; i < listLen; i++, stmt_error_desc_def++) {
+            MEMORY_DELETE_ARRAY(stmt_error_desc_def->errorText);
+        }
+        MEMORY_DELETE_ARRAY(exception_.u.SQLError.errorList._buffer);
+        stmt_error_desc_def = NULL;
+    }
 	FUNCTION_RETURN_VOID((NULL));
 }
 
