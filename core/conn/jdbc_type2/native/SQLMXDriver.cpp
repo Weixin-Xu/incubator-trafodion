@@ -50,7 +50,10 @@
 #include "GlobalInformation.h"
 #include "CommonLogger.h"
 #include "sqlcli.h"
+#include "PubInterface.h"
 
+#define LOGNAMESUFFIXLEN 127
+#define CONFIGFILENAMELEN 254
 static bool driverVersionChecked = false;
 #ifdef NSK_PLATFORM	// Linux port - ToDo txn related
 int client_initialization(void);
@@ -231,6 +234,54 @@ JNIEXPORT void JNICALL Java_org_apache_trafodion_jdbc_t2_T2Driver_SQLMXInitializ
 	}
 	srvrGlobal->boolFlgforInitialization = 1;
 	// MFC set the srvrGlobal variables w.r.t the properties - end
+
+
+    /******************************************************************
+    //Initialize the CommonLogger
+    //
+    //You can set the configuration by modifing the log4cxx config file
+	*******************************************************************/
+    char *logNameSuffix;
+    char *lv_configFileName;
+	MEMORY_ALLOC_ARRAY(logNameSuffix, char, LOGNAMESUFFIXLEN);
+	MEMORY_ALLOC_ARRAY(lv_configFileName, char, CONFIGFILENAMELEN);
+	memset(logNameSuffix, 0, sizeof(logNameSuffix));
+	memset(lv_configFileName, 0, sizeof(lv_configFileName));
+
+    strcpy(lv_configFileName, "log4cxx.trafodion.jdbct2.config");
+
+    bool singleSqlLogFile = TRUE;
+    if (getenv("TRAF_MULTIPLE_SQL_LOG_FILE"))
+        singleSqlLogFile = FALSE;
+    if (singleSqlLogFile)
+	{
+	    sprintf( logNameSuffix, "_%d.log",getpid() );
+
+    }
+    else
+    {
+	    sprintf( logNameSuffix, "_%d_.log",getpid() );
+
+	    //TO CONFIG
+		memset(lv_configFileName, 0, sizeof(lv_configFileName));
+        strcpy(lv_configFileName, "log4cxx.trafodion.t2master.config");
+    }
+
+    CommonLogger::instance().initLog4cxx(lv_configFileName, logNameSuffix);
+
+    MEMORY_DELETE_ARRAY(lv_configFileName);
+    MEMORY_DELETE_ARRAY(logNameSuffix);
+
+    SendEventMsg(  JDBC_TYPE2_TEST_ERROR,
+                   EVENTLOG_ERROR_TYPE,
+                   getpid(),
+                   "JAVA_TYPE2",
+                   "testobj",
+                   1,
+                   "Just a test"
+                );
+
+
 	FUNCTION_RETURN_VOID((NULL));
 }
 

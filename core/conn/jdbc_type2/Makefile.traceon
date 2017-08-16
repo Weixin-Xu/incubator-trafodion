@@ -62,7 +62,8 @@ T2_OBJS  = $(OUTDIR)/CommonDiags.o \
        $(OUTDIR)/TrafT2NativeInterface.o \
        $(OUTDIR)/TrafT2SrvrConnect.o \
        $(OUTDIR)/utils.o \
-       $(OUTDIR)/type2version.o
+       $(OUTDIR)/type2version.o \
+	   $(OUTDIR)/PubInterface.o
 
 CSES := org.apache.trafodion.jdbc.t2.JdbcDebug \
 		org.apache.trafodion.jdbc.t2.DataWrapper \

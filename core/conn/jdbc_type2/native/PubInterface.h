@@ -29,7 +29,8 @@
 #include "CoreCommon.h"
 
 #include <sqlcli.h>
-
+#include "jdbct2Msg.h"
+#include "Debug.h"
 struct collect_info
 {
     char                            clientId[MAX_COMPUTER_NAME_LEN + 1];
@@ -51,7 +52,7 @@ struct collect_info
     unsigned long                   authenticationTime;
 };
 
-/*** +++ T2_REPO
+/*** +++ T2_REPO*/
 extern void SendEventMsg(
           DWORD EventId
         , short EventLogType
@@ -60,7 +61,7 @@ extern void SendEventMsg(
         , char *ObjectRef
         , short nToken
         , ...);
-
+/*
 extern void setCriticalDialout();
 
 extern void setIsWms();
