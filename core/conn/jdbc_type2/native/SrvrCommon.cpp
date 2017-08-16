@@ -2290,8 +2290,9 @@ void print_outputValueList(SQLValueList_def *oVL, long colCount, const char * fc
         for (int col=0; col < colCount && col < 4; col++) {
             int index=row*colCount+col;
             if (oVL->_buffer->dataType == SQLTYPECODE_VARCHAR) {
-                char * text = new char[oVL->_buffer[index].dataValue._length+1];
+                MEMORY_ALLOC_ARRAY(text, char, oVL->_buffer[index].dataValue._length + 1);
 
+                char * text = NULL;
                 memcpy(text, oVL->_buffer[index].dataValue._buffer, oVL->_buffer[index].dataValue._length);
 
                 text[oVL->_buffer->dataValue._length] = 0;
@@ -2299,14 +2300,14 @@ void print_outputValueList(SQLValueList_def *oVL, long colCount, const char * fc
                 printf("  SQLTYPECODE_VARCHAR oVL[%d]=%s\n",
                     col, text);
 
-                //Soln. No.: 10-111229-1174 fix memory leak
-                delete[] text;
-
+                MEMORY_DELETE_ARRAY(text);
             }
             if (oVL->_buffer->dataType == SQLTYPECODE_VARCHAR_WITH_LENGTH) {
 
                 short * len = (short *)oVL->_buffer[index].dataValue._buffer;
-                char * text = new char[*len+1];
+
+                char * text = NULL;
+                MEMORY_ALLOC_ARRAY(text, char, oVL->_buffer[index].dataValue._length, *len + 1);
 
                 memcpy(text, (char *)oVL->_buffer[index].dataValue._buffer+2, *len);
 
@@ -2315,8 +2316,7 @@ void print_outputValueList(SQLValueList_def *oVL, long colCount, const char * fc
                 printf("  SQLTYPECODE_VARCHAR_WITH_LENGTH oVL[%d]=%s\n",
                     col, text);
 
-                //Soln. No.: 10-111229-1174 fix memory leak
-                delete[] text;
+                MEMORY_DELETE_ARRAY(text);
             }
         }
     }

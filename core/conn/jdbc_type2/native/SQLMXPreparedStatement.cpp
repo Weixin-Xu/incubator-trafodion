@@ -579,7 +579,7 @@ JNIEXPORT void JNICALL Java_org_apache_trafodion_jdbc_t2_SQLMXPreparedStatement_
 	if (sql)
 	{
 		nSql = JNI_GetStringUTFChars(jenv,sql, NULL);
-		sqlString.dataValue._buffer = new unsigned char[strlen(nSql)+1];
+        MEMORY_ALLOC_ARRAY(sqlString.dataValue._buffer, char, strlen(nSql) + 1);
 		strcpy(sqlString.dataValue._buffer, nSql);
 		sqlString.dataValue._length = strlen(nSql);
 

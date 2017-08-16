@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include <string.h>
+#include "Debug.h"
 #include "jdbcUtil.h"
 
 #define CMD_INITALIZE			1
@@ -159,7 +160,8 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
-		JdbcUtil *util = new JdbcUtil();
+		JdbcUtil *util = NULL;
+        MEMORY_ALLOC_OBJ(util, jdbcUtil);
 		switch (utilCmd)
 		{
 			case CMD_INITALIZE:

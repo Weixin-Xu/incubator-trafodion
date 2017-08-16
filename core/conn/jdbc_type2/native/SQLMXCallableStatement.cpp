@@ -89,7 +89,7 @@ JNIEXPORT void JNICALL Java_org_apache_trafodion_jdbc_t2_SQLMXCallableStatement_
 		}
 		len = JNI_GetArrayLength(jenv,sqlByteArray);
 		//Start Soln. No.: 10-091103-5969
-		sqlString.dataValue._buffer = new unsigned char [len+1];
+        MEMORY_ALLOC_ARRAY(sqlString.dataValue._buffer, unsigned char, len + 1);
 		memset(sqlString.dataValue._buffer,'\0',len+1);
 		strncpy((char *)sqlString.dataValue._buffer,(const char *)nSql,len);
 		//sqlString.dataValue._buffer = (unsigned char *)nSql;

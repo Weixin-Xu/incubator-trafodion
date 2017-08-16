@@ -63,6 +63,7 @@ T2_OBJS  = $(OUTDIR)/CommonDiags.o \
        $(OUTDIR)/TrafT2SrvrConnect.o \
        $(OUTDIR)/utils.o \
        $(OUTDIR)/type2version.o
+
 CSES := org.apache.trafodion.jdbc.t2.JdbcDebug \
 		org.apache.trafodion.jdbc.t2.DataWrapper \
 		org.apache.trafodion.jdbc.t2.SQLMXCallableStatement \
@@ -71,7 +72,9 @@ CSES := org.apache.trafodion.jdbc.t2.JdbcDebug \
 		org.apache.trafodion.jdbc.t2.T2Driver \
 		org.apache.trafodion.jdbc.t2.SQLMXPreparedStatement \
 		org.apache.trafodion.jdbc.t2.SQLMXResultSet \
-		org.apache.trafodion.jdbc.t2.SQLMXStatement
+		org.apache.trafodion.jdbc.t2.SQLMXStatement \
+		org.apache.trafodion.jdbc.t2.TrafT2NativeInterface
+
 OBJS = $(COMMON_OBJS) $(T2_OBJS)
 MXODIR = $(TRAF_HOME)/../conn/odbc/src/odbc
 
@@ -108,6 +111,7 @@ clean:
 	$(MAVEN) clean
 	$(RM) $(LIBEXPDIR)/libjdbcT2.so
 	$(RM) -f $(EXPROOT)/lib/jdbcT2*.jar
+	$(RM) -f $(EXPROOT)/lib/trafjdbcT2*.jar
 	$(RM) -rf $(OUTDIR)
 	$(RM) -rf $(BUILD_PLAT)
 	echo '$(CSES)'|sed -e 's/\./_/g' -e 's/[[:space:]]/\n/g' |xargs -i rm -f 'native/{}.h'
