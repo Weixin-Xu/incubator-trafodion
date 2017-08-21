@@ -704,12 +704,12 @@ void ResStatisticsStatement::start(Int32 inState,
     {
         if (inSqlStatement != NULL)
         {
-            sqlStatement = new char[strlen(inSqlStatement) + 1];
+            MEMORY_ALLOC_ARRAY(sqlStatement, char, strlen(inSqlStatement) + 1);
             strcpy(sqlStatement,inSqlStatement);
         }
         else
         {
-            sqlStatement = new char[5];
+            MEMORY_ALLOC_ARRAY(sqlStatement, char, 5);
             strcpy(sqlStatement,"NULL");
         }
         if (sqlStatement != NULL)
@@ -731,8 +731,7 @@ void ResStatisticsStatement::start(Int32 inState,
                                 "0",
                                 ssEvent.str().c_str());
 #endif
-            delete sqlStatement;
-            sqlStatement = NULL;
+            MEMORY_DELETE_ARRAY(sqlStatement);
         }
         else
         {
@@ -754,12 +753,12 @@ void ResStatisticsStatement::start(Int32 inState,
     {
         if (inSqlStatement != NULL)
         {
-            sqlStatement = new char[strlen(inSqlStatement) + 1];
+            MEMORY_ALLOC_ARRAY(sqlStatement, char, strlen(inSqlStatement) + 1);
             strcpy(sqlStatement,inSqlStatement);
         }
         else
         {
-            sqlStatement = new char[5];
+            MEMORY_ALLOC_ARRAY(sqlStatement, char, 5);
             strcpy(sqlStatement,"NULL");
         }
         if (sqlStatement != NULL)
@@ -779,8 +778,7 @@ void ResStatisticsStatement::start(Int32 inState,
                                 "0",
                                 ssEvent.str().c_str());
 #endif
-            delete sqlStatement;
-            sqlStatement = NULL;
+            MEMORY_DELETE_ARRAY(sqlStatement);
         }
         else
         {
@@ -810,12 +808,12 @@ void ResStatisticsStatement::start(Int32 inState,
 
         if (inSqlStatement != NULL)
         {
-            sqlStatement = new char[strlen(inSqlStatement) + 1];
+            MEMORY_ALLOC_ARRAY(sqlStatement, char, strlen(inSqlStatement) + 1);
             strcpy(sqlStatement,inSqlStatement);
         }
         else
         {
-            sqlStatement = new char[5];
+            MEMORY_ALLOC_ARRAY(sqlStatement, char, 5);
             strcpy(sqlStatement,"NULL");
         }
         if (sqlStatement != NULL)
@@ -838,8 +836,7 @@ void ResStatisticsStatement::start(Int32 inState,
                         );
 */
             }
-            delete sqlStatement;
-            sqlStatement = NULL;
+            MEMORY_DELETE_ARRAY(sqlStatement);
         }
         else
         {
@@ -972,12 +969,12 @@ void ResStatisticsStatement::end(Int32 inState,
     {
         if (inSqlStatement != NULL)
         {
-            sqlStatement = new char[strlen(inSqlStatement) + 1];
+            MEMORY_ALLOC_ARRAY(sqlStatement, char, strlen(inSqlStatement) + 1);
             strcpy(sqlStatement,inSqlStatement);
         }
         else
         {
-            sqlStatement = new char[5];
+            MEMORY_ALLOC_ARRAY(sqlStatement, char, 5);
             strcpy(sqlStatement,"NULL");
         }
         if (sqlStatement != NULL)
@@ -1001,8 +998,7 @@ void ResStatisticsStatement::end(Int32 inState,
                                 "0",
                                 ssEvent.str().c_str());
 #endif
-            delete sqlStatement;
-            sqlStatement = NULL;
+            MEMORY_DELETE_ARRAY(sqlStatement);
         }
         else
         {
@@ -1025,12 +1021,12 @@ void ResStatisticsStatement::end(Int32 inState,
     {
         if (inSqlStatement != NULL)
         {
-            sqlStatement = new char[strlen(inSqlStatement) + 1];
+            MEMORY_ALLOC_ARRAY(sqlStatement, char, strlen(inSqlStatement) + 1);
             strcpy(sqlStatement,inSqlStatement);
         }
         else
         {
-            sqlStatement = new char[5];
+            MEMORY_ALLOC_ARRAY(sqlStatement, char, 5);
             strcpy(sqlStatement,"NULL");
         }
         if (sqlStatement != NULL)
@@ -1053,8 +1049,7 @@ void ResStatisticsStatement::end(Int32 inState,
                                 "0",
                                 ssEvent.str().c_str());
 #endif
-            delete sqlStatement;
-            sqlStatement = NULL;
+            MEMORY_DELETE_ARRAY(sqlStatement);
         }
         else
         {
@@ -1434,7 +1429,7 @@ void ResStatisticsStatement::setStatistics(SRVR_STMT_HDL *pSrvrStmt, SQLSTATS_TY
         bzero(perTableStats, sizeof(perTableStats));
         perTableRowSize = 0;
 
-        sqlStatsDesc_ = new (nothrow) SQLSTATS_DESC[maxStatsDescEntries_];
+        MEMORY_ALLOC_ARRAY(sqlStatsDesc_, SQLSTATS_DESC, maxStatsDescEntries_);
         if (sqlStatsDesc_ == NULL) { cliRC = 990; throw("error");}
 
             cliRC = SQL_EXEC_GetStatistics2(
@@ -1456,7 +1451,7 @@ void ResStatisticsStatement::setStatistics(SRVR_STMT_HDL *pSrvrStmt, SQLSTATS_TY
             switch (sqlStatsDesc_[currStatsDescEntry_].stats_type)
             {
             case SQLSTATS_DESC_MASTER_STATS:
-                masterStatsItems_ = new (nothrow) SQLSTATS_ITEM[MAX_MASTERSTATS_ENTRY];
+                MEMORY_ALLOC_ARRAY(masterStatsItems_, SQLSTATS_ITEM, MAX_MASTERSTATS_ENTRY);
                 if (masterStatsItems_ == NULL) { cliRC = 992; throw ("error");}
 
                 bzero(masterStatsItems_, sizeof(SQLSTATS_ITEM)*MAX_MASTERSTATS_ENTRY);
@@ -1494,32 +1489,38 @@ void ResStatisticsStatement::setStatistics(SRVR_STMT_HDL *pSrvrStmt, SQLSTATS_TY
                 masterStatsItems_[30].statsItem_id = SQLSTATS_PARENT_QUERY_SYSTEM;
 
                 // MAX_MASTERSTATS_ENTRY is set to 31
-                qrid_ = masterStatsItems_[0].str_value = new (nothrow) char[MAX_QUERY_ID_LEN+1];
+                MEMORY_ALLOC_ARRAY(masterStatsItems_[0].str_value, char, MAX_QUERY_ID_LEN + 1);
+                qrid_ = masterStatsItems_[0].str_value;
                 if (qrid_ == NULL) { cliRC = 993; throw ("error");}
                 bzero(qrid_, MAX_QUERY_ID_LEN+1);
                 masterStatsItems_[0].str_max_len = MAX_QUERY_ID_LEN;
 
-                parentid_ = masterStatsItems_[16].str_value = new (nothrow) char[MAX_QUERY_ID_LEN+1];
+                MEMORY_ALLOC_ARRAY(masterStatsItems_[16].str_value, char, MAX_QUERY_ID_LEN + 1);
+                parentid_ = masterStatsItems_[16].str_value;
                 if (parentid_ == NULL) { cliRC = 994; throw ("error");}
                 bzero(parentid_, MAX_QUERY_ID_LEN+1 );
                 masterStatsItems_[16].str_max_len = MAX_QUERY_ID_LEN;
 
-                childid_ = masterStatsItems_[27].str_value = new (nothrow) char[MAX_QUERY_ID_LEN+1];
+                MEMORY_ALLOC_ARRAY(masterStatsItems_[27].str_value, char,MAX_QUERY_ID_LEN + 1);
+                childid_ = masterStatsItems_[27].str_value;
                 if (childid_ == NULL) { cliRC = 995; throw ("error");}
                 bzero(childid_, MAX_QUERY_ID_LEN+1);
                 masterStatsItems_[27].str_max_len = MAX_QUERY_ID_LEN;
 
-                rmsSqlSource_ = masterStatsItems_[19].str_value = new (nothrow) char[RMS_STORE_SQL_SOURCE_LEN+2];
+                MEMORY_ALLOC_ARRAY(masterStatsItems_[19].str_value, char, RMS_STORE_SQL_SOURCE_LEN + 2);
+                rmsSqlSource_ = masterStatsItems_[19].str_value;
                 if (rmsSqlSource_ == NULL) { cliRC = 996; throw ("error");}
                 bzero(rmsSqlSource_, RMS_STORE_SQL_SOURCE_LEN+2);
                 masterStatsItems_[19].str_max_len = RMS_STORE_SQL_SOURCE_LEN;
 
-                subQueryType_ = masterStatsItems_[29].str_value = new (nothrow) char[SUB_QRY_TYPE_LEN+1];
+                MEMORY_ALLOC_ARRAY(masterStatsItems_[29].str_value, char, SUB_QRY_TYPE_LEN + 1);
+                subQueryType_ = masterStatsItems_[29].str_value;
                 if (subQueryType_ == NULL) { cliRC = 1000; throw ("error");}
                 bzero(subQueryType_, SUB_QRY_TYPE_LEN+1);
                 masterStatsItems_[29].str_max_len = SUB_QRY_TYPE_LEN;
 
-                parentSystem_ = masterStatsItems_[30].str_value = new (nothrow) char[PAR_SYS_NAME_LEN+1];
+                MEMORY_ALLOC_ARRAY(masterStatsItems_[30].str_value, char,PAR_SYS_NAME_LEN + 1);
+                parentSystem_ = masterStatsItems_[30].str_value;
                 if (parentSystem_ == NULL) { cliRC = 1001; throw ("error");}
                 bzero(parentSystem_, PAR_SYS_NAME_LEN+1);
                 masterStatsItems_[30].str_max_len = PAR_SYS_NAME_LEN;
@@ -1535,7 +1536,7 @@ void ResStatisticsStatement::setStatistics(SRVR_STMT_HDL *pSrvrStmt, SQLSTATS_TY
                 break;
 
             case SQLSTATS_DESC_MEAS_STATS:
-                measStatsItems_ = new (nothrow) SQLSTATS_ITEM[MAX_MEASSTATS_ENTRY];
+                MEMORY_ALLOC_ARRAY(measStatsItems_, SQLSTATS_ITEM, MAX_MEASSTATS_ENTRY);
                 if (measStatsItems_ == NULL) { cliRC = 997; throw ("error");}
 
                 bzero(measStatsItems_, sizeof(SQLSTATS_ITEM)*MAX_MEASSTATS_ENTRY);
@@ -1587,7 +1588,7 @@ void ResStatisticsStatement::setStatistics(SRVR_STMT_HDL *pSrvrStmt, SQLSTATS_TY
             case SQLSTATS_DESC_PERTABLE_STATS:
 
                 if( !pertableStatsItems_ ) {
-                    pertableStatsItems_ = new (nothrow) SQLSTATS_ITEM[MAX_PERTABLE_ENTRY];
+                    MEMORY_ALLOC_ARRAY(pertableStatsItems_, SQLSTATS_ITEM, MAX_PERTABLE_ENTRY);
                     if (pertableStatsItems_ == NULL) { cliRC = 998; throw ("error");}
                 }
 
@@ -1604,7 +1605,8 @@ void ResStatisticsStatement::setStatistics(SRVR_STMT_HDL *pSrvrStmt, SQLSTATS_TY
                 pertableStatsItems_[9].statsItem_id = SQLSTATS_OPEN_TIME;
 
                 if( pertableStatsItems_[0].str_value == NULL ) {
-                    tblName_ = pertableStatsItems_[0].str_value = new char[MAX_SQL_IDENTIFIER_LEN+1];
+                    MEMORY_ALLOC_ARRAY(pertableStatsItems_[0].str_value, char, MAX_SQL_IDENTIFIER_LEN + 1);
+                    tblName_ = pertableStatsItems_[0].str_value;
                     if (tblName_ == NULL) { cliRC = 999; throw ("error");}
                     pertableStatsItems_[0].str_max_len = MAX_SQL_IDENTIFIER_LEN+1;
                 }
@@ -1944,17 +1946,17 @@ void ResStatisticsStatement::setStatistics(SRVR_STMT_HDL *pSrvrStmt, SQLSTATS_TY
             translateToUTF8(srvrGlobal->isoMapping, rmsSqlSource_, sqlSrcLen + 1, pSrvrStmt->m_shortQueryText, RMS_STORE_SQL_SOURCE_LEN);
             pSrvrStmt->m_bNewQueryId = false;
         }
-    if (sqlStatsDesc_ != NULL) delete[] sqlStatsDesc_;
-    if (masterStatsItems_ != NULL) delete[] masterStatsItems_;
-    if (measStatsItems_ != NULL) delete[] measStatsItems_;
-    if (qrid_ != NULL) delete[] qrid_;
-    if (parentid_ != NULL) delete[] parentid_;
-    if (childid_ != NULL) delete[] childid_;
-    if (rmsSqlSource_ != NULL) delete[] rmsSqlSource_;
-    if (pertableStatsItems_ != NULL) delete[] pertableStatsItems_;
-    if (tblName_ != NULL) delete[] tblName_;
-    if (subQueryType_ != NULL) delete[] subQueryType_;
-    if (parentSystem_ != NULL) delete[] parentSystem_;
+    if (sqlStatsDesc_ != NULL) MEMORY_DELETE_ARRAY(sqlStatsDesc_);
+    if (masterStatsItems_ != NULL) MEMORY_DELETE_ARRAY(masterStatsItems_);
+    if (measStatsItems_ != NULL) MEMORY_DELETE_ARRAY(measStatsItems_);
+    if (qrid_ != NULL) MEMORY_DELETE_ARRAY(qrid_);
+    if (parentid_ != NULL) MEMORY_DELETE_ARRAY(parentid_);
+    if (childid_ != NULL) MEMORY_DELETE_ARRAY(childid_);
+    if (rmsSqlSource_ != NULL) MEMORY_DELETE_ARRAY(rmsSqlSource_);
+    if (pertableStatsItems_ != NULL) MEMORY_DELETE_ARRAY(pertableStatsItems_);
+    if (tblName_ != NULL) MEMORY_DELETE_ARRAY(tblName_);
+    if (subQueryType_ != NULL) MEMORY_DELETE_ARRAY(subQueryType_);
+    if (parentSystem_ != NULL) MEMORY_DELETE_ARRAY(parentSystem_);
 
 }
 
@@ -2465,7 +2467,7 @@ void ResStatisticsStatement::SendQueryStats(bool bStart, SRVR_STMT_HDL *pSrvrStm
     }
     if (pSrvrStmt->exPlan != SRVR_STMT_HDL::STORED && pSrvrStmt->sqlPlan != NULL && pSrvrStmt->sqlPlanLen > 0)
     {
-        pQuery_info->m_explain_plan = new char[pSrvrStmt->sqlPlanLen];
+        MEMORY_ALLOC_ARRAY(pQuery_info->m_explain_plan, char, pSrvrStmt->sqlPlanLen);
         if (pQuery_info->m_explain_plan != NULL)
         {
             memcpy( pQuery_info->m_explain_plan, pSrvrStmt->sqlPlan, pSrvrStmt->sqlPlanLen );
