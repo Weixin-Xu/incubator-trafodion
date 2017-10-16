@@ -31,99 +31,44 @@
 #include <sqlext.h>
 #include "drvrglobal.h"
 #include "charsetconv.h"
-  
-#define ENDIAN_PRECISION_MAX	39
+#include "cdesc.h"
 
 namespace ODBC {
 
-unsigned long ConvertSQLToC(SQLINTEGER	ODBCAppVersion,
-							DWORD		DataLangId,
-							SQLSMALLINT	SQLDataType,
-							SQLSMALLINT	ODBCDataType,
-							SQLSMALLINT SQLDatetimeCode,
-							SQLPOINTER	srcDataPtr,
-							SQLINTEGER	srcLength,
-							SQLSMALLINT	srcPrecision,
-							SQLSMALLINT	srcScale,
-							SQLSMALLINT srcUnsigned,
-							SQLINTEGER	srcCharSet,
-							SQLINTEGER	srcMaxLength,
-							SQLSMALLINT	CDataType,
-							SQLPOINTER	targetDataPtr,
-							SQLINTEGER	targetLength,
-							SQLLEN  *targetStrLenPtr,
-							BOOL		byteSwap,
-							CHAR		*&translatedDataPtr,
-							ICUConverter* iconv,
-							SQLINTEGER	*totalReturnedLength = NULL,
-							UCHAR		*errorMsg = NULL,
-							SWORD		errorMsgMax = 0,
-							SQLINTEGER	EnvironmentType = NSK_BUILD_1,
-							BOOL		ColumnwiseData = FALSE,
-							CHAR		*replacementChar = NULL);
+unsigned long ConvertSQLToC(SQLINTEGER      ODBCAppVersion,
+                            DWORD           DataLangId,
+                            CDescRec*       srcDescPtr,
+                            SQLSMALLINT     SQLDataType,
+                            SQLPOINTER      srcDataPtr,
+                            SQLINTEGER      srcLength,
+                            SQLSMALLINT     CDataType,
+                            SQLPOINTER      targetDataPtr,
+                            SQLINTEGER      targetLength,
+                            SQLLEN*         targetStrLenPtr,
+                            BOOL            bigEndian,
+#ifdef unixcli
+                            ICUConverter*   iconv,
+#else
+                            DWORD           translateOption = 0,
+#endif
+                            SQLINTEGER*     totalReturnedLength = NULL,//offset in Input
+                            UCHAR*          errorMsg = NULL,
+                            SWORD           errorMsgMax = 0,
+                            SQLINTEGER      EnvironmentType = NSK_BUILD_1,
+                            BOOL            ColumnwiseData = FALSE,//catalog api set TRUE
+                            CHAR*           replacementChar = NULL
+                            );
 
-SQLRETURN ConvertNumericToChar(SQLSMALLINT SQLDataType, SQLPOINTER srcDataPtr, SQLSMALLINT srcScale, 
-							   char *cTmpBuf, SQLINTEGER &DecimalPoint);
 
-SQLRETURN ConvertDecimalToChar(SQLSMALLINT SQLDataType, SQLPOINTER srcDataPtr, SQLINTEGER srcLength, 
-								SQLSMALLINT srcScale, char *cTmpBuf, SQLINTEGER &DecimalPoint);
+unsigned long ConvFromSQLBool(SQLPOINTER srcDataPtr, SQLPOINTER targetDataPtr, SQLINTEGER targetLength, SQLLEN* targetStrLenPtr, SQLSMALLINT CDataType);
+unsigned long ConvSQLCharToNumber(SQLPOINTER srcDataPtr, CDescRec* srcDescPtr, SQLINTEGER srcLength, SQLSMALLINT CDataType, SQLPOINTER targetDataPtr, SQLLEN* targetStrLenPtr, ICUConverter* iconv, UCHAR *errorMsg = NULL);
+unsigned long ConvSQLNumberToNumber(SQLPOINTER srcDataPtr, CDescRec* srcDescPtr, SQLINTEGER srcLength, SQLSMALLINT SQLDataType, SQLPOINTER targetDataPtr, SQLLEN* targetStrLenPtr, SQLSMALLINT CDataType);
+unsigned long ConvertSoftDecimalToDouble(SQLSMALLINT SQLDataType, SQLPOINTER srcDataPtr, SQLINTEGER srcLength, SQLSMALLINT srcScale, double &dTmp);
+unsigned long ConvDoubleToCNumber(double dTmp, SQLPOINTER targetDataPtr, SQLLEN* targetStrLenPtr, SQLSMALLINT CDataType);
+unsigned long ConvInt64ToCNumber(__int64 tempVal64, unsigned __int64 utempVal64, bool unsignedValue, SQLPOINTER targetDataPtr, SQLLEN* targetStrLenPtr, SQLSMALLINT CDataType);
 
-SQLRETURN ConvertSoftDecimalToDouble(SQLSMALLINT SQLDataType, SQLPOINTER srcDataPtr, SQLINTEGER srcLength, 
-								SQLSMALLINT srcScale, double &dTmp);
-
-unsigned long ConvertSQLCharToNumeric(SQLPOINTER srcDataPtr, SQLINTEGER srcLength,
-									SQLSMALLINT ODBCDataType, double &dTmp);
-
-unsigned long ConvertSQLCharToDate(SQLSMALLINT ODBCDataType, 
-						SQLPOINTER srcDataPtr,
-						SQLINTEGER	srcLength,
-						SQLSMALLINT CDataType,
-						SQLPOINTER outValue);
-
-unsigned long ConvertCharToCNumeric( SQL_NUMERIC_STRUCT& numericTmp, 
-									CHAR* cTmpBuf);
-
-unsigned long ConvertCharToBigEndianCNumeric( SQL_NUMERIC_STRUCT& numericTmp, 
-									CHAR* cTmpBuf);
-
-unsigned long ConvertCharToBigEndianCBigint( void* bigintTmp, CHAR* cTmpBuf);
-
-unsigned long ConvertSQLCharToInterval(SQLSMALLINT ODBCDataType, 
-						SQLPOINTER srcDataPtr,
-						SQLINTEGER	srcLength,
-						SQLSMALLINT CDataType,
-						SQLPOINTER outValue);
-
-SWORD GetYearFromStr(UCHAR* ptr);
-UCHAR GetMonthFromStr(UCHAR* ptr);
-UCHAR GetDayFromStr(UCHAR* ptr);
-UCHAR GetHourFromStr(UCHAR* ptr);
-UCHAR GetMinuteFromStr(UCHAR* ptr);
-UCHAR GetSecondFromStr(UCHAR* ptr);
-UDWORD_P GetFractionFromStr(UCHAR* ptr, short precision);
-unsigned short ConvToInt(UCHAR* ptr,int len);
-
-unsigned long BigNum_To_Ascii_Helper(char * source,
-							 long sourceLen,
-							 long sourcePrecision,
-							 long sourceScale,
-							 char * target,
-							 SQLSMALLINT SQLDataType
-							);
-							
-inline char * getTmpDest(unsigned int size, unsigned int *allocSize)
-{
-	if ((size > 8192) && (size <= 16384))
-	{
-		*allocSize = 16384; // 16 * 1024 bytes
-		return new char[16384];
-	}
-	else
-	{
-		*allocSize = 32768; // 32 * 1024 bytes
-		return new char[32768];
-	}
-}
 
 }
+
+
 #endif
