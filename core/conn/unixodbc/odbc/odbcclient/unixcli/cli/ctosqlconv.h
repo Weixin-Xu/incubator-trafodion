@@ -77,6 +77,46 @@ unsigned long ConvertCToSQL(SQLINTEGER	ODBCAppVersion,
 							BOOL		RWRSFormat = 0,
 							SQLINTEGER datetimeIntervalPrecision = 0);
 
+
+unsigned long  ConvertToBigint(SQLINTEGER	ODBCAppVersion,
+        SQLSMALLINT   CDataType,
+        SQLPOINTER    srcDataPtr,
+        SQLINTEGER    srcLength,
+        CDescRec*     targetDescPtr,
+        ICUConverter* iconv,
+        SQLPOINTER    targetDataPtr,
+        UCHAR         *errorMsg);
+
+unsigned long  ConvertAnyToDateType(SQLINTEGER	   ODBCAppVersion,
+        SQLSMALLINT   CDataType,
+        SQLPOINTER    srcDataPtr,
+        SQLINTEGER    srcLength,
+        CDescRec*     targetDescPtr,
+        ICUConverter* iconv,
+        SQLPOINTER    targetDataPtr,
+        BOOL          RWRSFormat,
+        UCHAR         *errorMsg);
+
+unsigned long  ConvertAnyToTimeType(SQLINTEGER	   ODBCAppVersion,
+        SQLSMALLINT   CDataType,
+        SQLPOINTER    srcDataPtr,
+        SQLINTEGER    srcLength,
+        CDescRec*     targetDescPtr,
+        ICUConverter* iconv,
+        SQLPOINTER    targetDataPtr,
+        BOOL          RWRSFormat,
+        UCHAR         *errorMsg);
+
+unsigned long  ConvertAnyToTimeStampType(SQLINTEGER	   ODBCAppVersion,
+        SQLSMALLINT   CDataType,
+        SQLPOINTER    srcDataPtr,
+        SQLINTEGER    srcLength,
+        CDescRec*     targetDescPtr,
+        ICUConverter* iconv,
+        SQLPOINTER    targetDataPtr,
+        BOOL          RWRSFormat,
+        UCHAR         *errorMsg);
+
 unsigned long ConvertCharToNumeric(SQLPOINTER srcDataPtr, 
 								   SQLINTEGER srcLength, 
 								   double &dTmp);

@@ -3525,6 +3525,754 @@ unsigned long ODBC::ConvertCToSQL(SQLINTEGER	ODBCAppVersion,
 	return retCode;
 }
 
+unsigned long  ODBC::ConvertToBigint(SQLINTEGER    ODBCAppVersion,
+                    SQLSMALLINT   CDataType,
+                    SQLPOINTER    srcDataPtr,
+                    SQLINTEGER    srcLength,
+                    CDescRec*     targetDescPtr,
+                    ICUConverter* iconv,
+                    SQLPOINTER    targetDataPtr,
+                    UCHAR         *errorMsg)
+{
+    SQLSMALLINT    ODBCDataType    = targetDescPtr->m_ODBCDataType;
+    SQLINTEGER     targetLength    = targetDescPtr->m_SQLOctetLength;
+    unsigned long  retCode         = SQL_SUCCESS;
+    SQLPOINTER     DataPtr         = NULL;
+    SQLINTEGER     DataLen         = DRVR_PENDING;
+    SQLINTEGER     translateLength = 0;
+    char           srcDataLocale[256] = {0};
+    __int64        tempVal64       = 0;
+    CHAR           cTmpBuf[256]    = {0};
+    SQL_INTERVAL_STRUCT *intervalTmp  = NULL;
+
+    switch (CDataType)
+    {
+        case SQL_C_WCHAR:
+            if (iconv->isAppUTF16())
+            {
+                if (srcLength != SQL_NTS)
+                    srcLength = srcLength/2;
+                // translate from UTF16
+                if (iconv->WCharToUTF8((UChar*)srcDataPtr, srcLength, srcDataLocale, sizeof(srcDataLocale), (int*)&translateLength, (char*)errorMsg) != SQL_SUCCESS)
+                    return IDS_193_DRVTODS_ERROR;
+                srcDataPtr = srcDataLocale;
+                srcLength = translateLength;
+            }
+        case SQL_C_CHAR:
+            {
+                retCode = ConvertCharToInt64(srcDataPtr, srcLength, tempVal64);
+                if (retCode != SQL_SUCCESS)
+                    return retCode;
+            }
+            break;
+        case SQL_C_SHORT:
+        case SQL_C_SSHORT:
+            tempVal64 = *(SSHORT *)srcDataPtr;
+            break;
+        case SQL_C_USHORT:
+            tempVal64 = *(USHORT *)srcDataPtr;
+            break;
+        case SQL_C_TINYINT:
+        case SQL_C_STINYINT:
+            tempVal64 = *(SCHAR *)srcDataPtr;
+            break;
+        case SQL_C_UTINYINT:
+        case SQL_C_BIT:
+            tempVal64 = *(UCHAR *)srcDataPtr;
+            break;
+        case SQL_C_SLONG:
+        case SQL_C_LONG:
+            tempVal64 = *(SLONG_P *)srcDataPtr;
+            break;
+        case SQL_C_ULONG:
+            tempVal64 = *(ULONG_P *)srcDataPtr;
+            break;
+        case SQL_C_FLOAT:
+            tempVal64 = *(SFLOAT *)srcDataPtr;
+            break;
+        case SQL_C_DOUBLE:
+            tempVal64 = *(DOUBLE *)srcDataPtr;
+            break;
+        case SQL_C_BINARY:
+            DataPtr = srcDataPtr;
+            break;
+        case SQL_C_DEFAULT:
+            if (ODBCAppVersion >= SQL_OV_ODBC3)
+                DataPtr = srcDataPtr;
+            else
+            {
+                retCode = ConvertCharToInt64(srcDataPtr, srcLength, tempVal64);
+                if (retCode!= SQL_SUCCESS)
+                    return retCode;
+            }
+            break;
+        case SQL_C_SBIGINT:
+            tempVal64 = *(__int64 *)srcDataPtr;
+            break;
+        case SQL_C_NUMERIC:
+            ConvertCNumericToChar((SQL_NUMERIC_STRUCT*)srcDataPtr, cTmpBuf);
+            srcLength = strlen(cTmpBuf);
+            retCode = ConvertCharToInt64((char*)cTmpBuf, srcLength, tempVal64);
+            if (retCode != SQL_SUCCESS)
+                return retCode;
+            break;
+        case SQL_C_INTERVAL_MONTH:
+            intervalTmp = (SQL_INTERVAL_STRUCT *)srcDataPtr;
+            if (intervalTmp->interval_sign == SQL_TRUE)
+                tempVal64 = -(intervalTmp->intval.year_month.month);
+            else
+                tempVal64 = intervalTmp->intval.year_month.month;
+            break;
+        case SQL_C_INTERVAL_YEAR:
+            intervalTmp = (SQL_INTERVAL_STRUCT *)srcDataPtr;
+            if (intervalTmp->interval_sign == SQL_TRUE)
+                tempVal64 = -(intervalTmp->intval.year_month.year);
+            else
+                tempVal64 = intervalTmp->intval.year_month.year;
+            break;
+        case SQL_C_INTERVAL_DAY:
+            intervalTmp = (SQL_INTERVAL_STRUCT *)srcDataPtr;
+            if (intervalTmp->interval_sign == SQL_TRUE)
+                tempVal64 = -(intervalTmp->intval.day_second.day);
+            else
+                tempVal64 = intervalTmp->intval.day_second.day;
+            break;
+        case SQL_C_INTERVAL_HOUR:
+            intervalTmp = (SQL_INTERVAL_STRUCT *)srcDataPtr;
+            if (intervalTmp->interval_sign == SQL_TRUE)
+                tempVal64 = -(intervalTmp->intval.day_second.hour);
+            else
+                tempVal64 = intervalTmp->intval.day_second.hour;
+            break;
+        case SQL_C_INTERVAL_MINUTE:
+            intervalTmp = (SQL_INTERVAL_STRUCT *)srcDataPtr;
+            if (intervalTmp->interval_sign == SQL_TRUE)
+                tempVal64 = -(intervalTmp->intval.day_second.minute);
+            else
+                tempVal64 = intervalTmp->intval.day_second.minute;
+            break;
+        case SQL_C_INTERVAL_SECOND:
+            intervalTmp = (SQL_INTERVAL_STRUCT *)srcDataPtr;
+            if (intervalTmp->interval_sign == SQL_TRUE)
+                tempVal64 = -(intervalTmp->intval.day_second.second);
+            else
+                tempVal64 = intervalTmp->intval.day_second.second;
+            break;
+        default:
+            return IDS_07_006;
+    }
+    if (DataPtr == NULL)
+        DataPtr = &tempVal64;
+    DataLen = sizeof(tempVal64);
+    if(targetLength < DataLen)
+        return IDS_22_001 ;
+    memcpy(targetDataPtr,DataPtr, DataLen);
+    return retCode; 
+
+
+
+}
+
+unsigned long  ODBC::ConvertAnyToDateType(SQLINTEGER       ODBCAppVersion,
+        SQLSMALLINT   CDataType,
+        SQLPOINTER    srcDataPtr,
+        SQLINTEGER    srcLength,
+        CDescRec*     targetDescPtr,
+        ICUConverter* iconv,
+        SQLPOINTER    targetDataPtr,
+        BOOL          RWRSFormat,
+        UCHAR         *errorMsg)
+{
+    SQLSMALLINT         ODBCDataType    = targetDescPtr->m_ODBCDataType;
+    SQLSMALLINT         SQLDataType     = targetDescPtr->m_SQLDataType;
+    SQLSMALLINT         targetScale     = targetDescPtr->m_ODBCScale;
+    SQLSMALLINT         targetUnsigned  = targetDescPtr->m_SQLUnsigned;
+    SQLINTEGER          targetPrecision = targetDescPtr->m_ODBCPrecision;
+    SQLINTEGER          targetCharSet   = targetDescPtr->m_SQLCharset;
+    SQLINTEGER          translateLength = 0;
+    SQLINTEGER          targetLength    = targetDescPtr->m_SQLOctetLength;
+    SQLSMALLINT         SQLDatetimeCode = targetDescPtr->m_SQLDatetimeCode;
+    SQL_INTERVAL_STRUCT *intervalTmp     = NULL;
+    char                srcDataLocale[256] = {0};
+    CHAR                cTmpBuf[256]    = {0};
+    BOOL                dataTruncatedWarning = FALSE;
+    unsigned long       retCode         = SQL_SUCCESS;
+    DATE_TYPES          SQLDate;
+    DATE_STRUCT         *dateTmp        = NULL;
+    short               datetime_parts[8] = {0};
+    TIMESTAMP_STRUCT    *timestampTmp   = NULL;
+    SQLUINTEGER         ulFraction      = 0;
+    CHAR                cTmpFraction[10] = {0};
+    DATE_TYPES          *pSQLDate       = NULL;
+    short               i               = 0;
+    SQLPOINTER          DataPtr         = NULL;
+    SQLINTEGER          DataLen         = DRVR_PENDING;
+
+
+    switch (CDataType)
+    {
+        case SQL_C_WCHAR:
+            if (iconv->isAppUTF16())
+            {
+                if (srcLength != SQL_NTS)
+                    srcLength = srcLength/2;
+                // translate from UTF16
+                if (iconv->WCharToUTF8((UChar*)srcDataPtr, srcLength, srcDataLocale, sizeof(srcDataLocale), (int*)&translateLength, (char*)errorMsg) != SQL_SUCCESS)
+                    return IDS_193_DRVTODS_ERROR;
+                srcDataPtr = srcDataLocale;
+                srcLength = translateLength;
+            }
+        case SQL_C_CHAR:
+            if (ConvertCharToSQLDate(srcDataPtr, srcLength, ODBCDataType, &SQLDate, targetPrecision)
+                    != SQL_SUCCESS)
+                return IDS_22_008;
+            break;
+        case SQL_C_DATE:
+        case SQL_C_TYPE_DATE:
+        case SQL_C_DEFAULT:
+            dateTmp = (DATE_STRUCT *)srcDataPtr;
+
+            for (i = 0 ; i < 8 ; i++)
+                datetime_parts[i] = 0;
+            datetime_parts[0] = dateTmp->year;
+            datetime_parts[1] = dateTmp->month;
+            datetime_parts[2] = dateTmp->day;
+            if (!checkDatetimeValue(datetime_parts))
+                return IDS_22_008;
+
+            SQLDate.year = dateTmp->year;
+            SQLDate.month = dateTmp->month;
+            SQLDate.day = dateTmp->day;
+            break;
+        case SQL_C_TIMESTAMP:
+        case SQL_C_TYPE_TIMESTAMP:
+            timestampTmp = (TIMESTAMP_STRUCT *)srcDataPtr;
+            // SQL/MX fraction precision is max 6 digits but ODBC accepts max precision 9 digits
+            // conversion from nano to micro fraction of second
+            ulFraction = (UDWORD_P)timestampTmp->fraction;
+            if (targetPrecision > 0)
+            {
+                ulFraction /= 1000;
+                sprintf(cTmpBuf, "%06u", ulFraction);
+                cTmpBuf[targetPrecision] = 0;
+                strcpy(cTmpFraction,cTmpBuf);
+            }
+
+            for (i = 0 ; i < 8 ; i++)
+                datetime_parts[i] = 0;
+            datetime_parts[0] = timestampTmp->year;
+            datetime_parts[1] = timestampTmp->month;
+            datetime_parts[2] = timestampTmp->day;
+            datetime_parts[3] = timestampTmp->hour;
+            datetime_parts[4] = timestampTmp->minute;
+            datetime_parts[5] = timestampTmp->second;
+            datetime_parts[6] = (short)(ulFraction/1000);
+            datetime_parts[7] = (short)(ulFraction%1000);
+            if (!checkDatetimeValue(datetime_parts))
+                return IDS_22_008;
+
+            SQLDate.year = timestampTmp->year;
+            SQLDate.month = timestampTmp->month;
+            SQLDate.day = timestampTmp->day;
+            /*
+               if (timestampTmp->hour != 0 || timestampTmp->minute != 0 || timestampTmp->second != 0 ||
+               timestampTmp->fraction != 0)
+               {
+               if (ODBCAppVersion >= SQL_OV_ODBC3)
+               return IDS_22_008;
+               else
+               retCode = IDS_22_001;
+               }
+               */
+            break;
+        case SQL_C_BINARY:
+            if (srcLength != targetLength)
+                return IDS_22_003;
+            DataPtr = srcDataPtr;
+            break;
+        default:
+            return IDS_07_006;
+    }
+    if (DataPtr == NULL)
+        DataPtr = &SQLDate;
+    DataLen = targetLength;
+
+    if (CDataType != SQL_C_BINARY && RWRSFormat == 0)
+    {
+        pSQLDate = (DATE_TYPES*)DataPtr;
+        switch (SQLDatetimeCode)
+        {
+            case SQLDTCODE_YEAR:
+                DataLen = sprintf(cTmpBuf, "%04d", pSQLDate->year);
+                break;
+            case SQLDTCODE_YEAR_TO_MONTH:
+                DataLen = sprintf(cTmpBuf, "%04d-%02d", pSQLDate->year,pSQLDate->month);
+                break;
+            case SQLDTCODE_MONTH:
+                DataLen = sprintf(cTmpBuf, "%02d", pSQLDate->month);
+                break;
+            case SQLDTCODE_MONTH_TO_DAY:
+                DataLen = sprintf(cTmpBuf, "%02d-%02d", pSQLDate->month,pSQLDate->day);
+                break;
+            case SQLDTCODE_DAY:
+                DataLen = sprintf(cTmpBuf, "%02d", pSQLDate->day);
+                break;
+            default:
+                DataLen = sprintf(cTmpBuf, "%04d-%02d-%02d", pSQLDate->year,pSQLDate->month,pSQLDate->day);
+        }
+        DataPtr = cTmpBuf;
+    }
+    if (DataLen != targetLength)
+        return IDS_22_003;
+
+    memcpy(targetDataPtr, DataPtr, DataLen);
+
+}
+
+unsigned long  ODBC::ConvertAnyToTimeType(SQLINTEGER       ODBCAppVersion,
+        SQLSMALLINT   CDataType,
+        SQLPOINTER    srcDataPtr,
+        SQLINTEGER    srcLength,
+        CDescRec*     targetDescPtr,
+        ICUConverter* iconv,
+        SQLPOINTER    targetDataPtr,
+        BOOL          RWRSFormat,
+        UCHAR         *errorMsg)
+{
+    SQLSMALLINT         ODBCDataType    = targetDescPtr->m_ODBCDataType;
+    SQLSMALLINT         SQLDataType     = targetDescPtr->m_SQLDataType;
+    SQLSMALLINT         targetScale     = targetDescPtr->m_ODBCScale;
+    SQLSMALLINT         targetUnsigned  = targetDescPtr->m_SQLUnsigned;
+    SQLINTEGER          targetPrecision = targetDescPtr->m_ODBCPrecision;
+    SQLINTEGER          targetCharSet   = targetDescPtr->m_SQLCharset;
+    SQLINTEGER          translateLength = 0;
+    SQLINTEGER          targetLength    = targetDescPtr->m_SQLOctetLength;
+    SQLSMALLINT         SQLDatetimeCode = targetDescPtr->m_SQLDatetimeCode;
+    short               i               = 0;
+    SQLPOINTER          DataPtr         = NULL;
+    SQLINTEGER          DataLen         = DRVR_PENDING;
+    char                srcDataLocale[256];
+    TIME_STRUCT         *timeTmp        = NULL;
+    TIME_TYPES          SQLTime;
+    TIME_TYPES          *pSQLTime;
+    CHAR                cTmpBuf[256]    = {0};
+    short               datetime_parts[8] = {0};
+    TIMESTAMP_STRUCT    *timestampTmp   = NULL;
+    SQLUINTEGER         ulFraction      = 0;
+    CHAR                cTmpFraction[10] = {0};
+    unsigned long       retCode         = SQL_SUCCESS;
+
+    switch (CDataType)
+    {
+        case SQL_C_WCHAR:
+            if (iconv->isAppUTF16())
+            {
+                if (srcLength != SQL_NTS)
+                    srcLength = srcLength/2;
+                // translate from UTF16 to
+                if (iconv->WCharToUTF8((UChar*)srcDataPtr, srcLength, srcDataLocale, sizeof(srcDataLocale), (int*)&translateLength, (char*)errorMsg) != SQL_SUCCESS)
+                    return IDS_193_DRVTODS_ERROR;
+                srcDataPtr = srcDataLocale;
+                srcLength = translateLength;
+            }
+        case SQL_C_CHAR:
+            if (ConvertCharToSQLDate(srcDataPtr, srcLength, ODBCDataType, &SQLTime, targetPrecision)
+                    != SQL_SUCCESS)
+                return IDS_22_008;
+            break;
+        case SQL_C_TIME:
+        case SQL_C_TYPE_TIME:
+        case SQL_C_DEFAULT:
+            timeTmp = (TIME_STRUCT *)srcDataPtr;
+
+            for (i = 0 ; i < 8 ; i++)
+                datetime_parts[i] = 0;
+            datetime_parts[0] = 1;
+            datetime_parts[1] = 1;
+            datetime_parts[2] = 1;
+            datetime_parts[3] = timeTmp->hour;
+            datetime_parts[4] = timeTmp->minute;
+            datetime_parts[5] = timeTmp->second;
+            if (!checkDatetimeValue(datetime_parts))
+                return IDS_22_008;
+
+            SQLTime.hour = timeTmp->hour;
+            SQLTime.minute = timeTmp->minute;
+            SQLTime.second = timeTmp->second;
+            memset(&SQLTime.fraction,0,sizeof(UDWORD_P));
+            break;
+        case SQL_C_TIMESTAMP:
+        case SQL_C_TYPE_TIMESTAMP:
+            timestampTmp = (TIMESTAMP_STRUCT *)srcDataPtr;
+            // SQL/MX fraction precision is max 6 digits but ODBC accepts max precision 9 digits
+            // conversion from nano to micro fraction of second
+            ulFraction = (UDWORD_P)timestampTmp->fraction;
+            if (targetPrecision > 0)
+            {
+                ulFraction /= 1000;
+                sprintf(cTmpBuf, "%06u", ulFraction);
+                cTmpBuf[targetPrecision] = 0;
+                strcpy(cTmpFraction,cTmpBuf);
+            }
+
+            for (i = 0 ; i < 8 ; i++)
+                datetime_parts[i] = 0;
+            datetime_parts[0] = timestampTmp->year;
+            datetime_parts[1] = timestampTmp->month;
+            datetime_parts[2] = timestampTmp->day;
+            datetime_parts[3] = timestampTmp->hour;
+            datetime_parts[4] = timestampTmp->minute;
+            datetime_parts[5] = timestampTmp->second;
+            datetime_parts[6] = (short)(ulFraction/1000);
+            datetime_parts[7] = (short)(ulFraction%1000);
+            if (!checkDatetimeValue(datetime_parts))
+                return IDS_22_008;
+
+            SQLTime.hour = timestampTmp->hour;
+            SQLTime.minute = timestampTmp->minute;
+            SQLTime.second = timestampTmp->second;
+            memcpy(&SQLTime.fraction, &ulFraction, sizeof(UDWORD_P));
+            if (targetPrecision == 0 && ulFraction != 0)
+            {
+                if (ODBCAppVersion >= SQL_OV_ODBC3)
+                    return IDS_22_008;
+                else
+                    retCode = IDS_01_S07;
+            }
+            break;
+        case SQL_C_BINARY:
+            if (srcLength != targetLength)
+                return IDS_22_008;
+            DataPtr = srcDataPtr;
+            break;
+        default:
+            return IDS_07_006;
+            break;
+    }
+    if (DataPtr == NULL)
+        DataPtr = &SQLTime;
+    DataLen = targetLength;
+
+    if (CDataType != SQL_C_BINARY && RWRSFormat == 0)
+    {
+        pSQLTime = (TIME_TYPES*)DataPtr;
+        switch  (SQLDatetimeCode)
+        {
+            case SQLDTCODE_HOUR:
+                DataLen = sprintf(cTmpBuf,"%02d",pSQLTime->hour);
+                break;
+            case SQLDTCODE_HOUR_TO_MINUTE:
+                DataLen = sprintf(cTmpBuf,"%02d:%02d",pSQLTime->hour,pSQLTime->minute);
+                break;
+            case SQLDTCODE_MINUTE:
+                DataLen = sprintf(cTmpBuf,"%02d",pSQLTime->minute);
+                break;
+            case SQLDTCODE_MINUTE_TO_SECOND:
+                if (targetPrecision > 0)
+                    DataLen = sprintf(cTmpBuf,"%02d:%02d.%s",pSQLTime->minute,pSQLTime->second,cTmpFraction);
+                else
+                    DataLen = sprintf(cTmpBuf,"%02d:%02d",pSQLTime->minute,pSQLTime->second);
+                break;
+            case SQLDTCODE_SECOND:
+                DataLen = sprintf(cTmpBuf,"%02d",pSQLTime->second);
+                break;
+            default:
+                DataLen = sprintf(cTmpBuf,"%02d:%02d:%02d",pSQLTime->hour,pSQLTime->minute,pSQLTime->second);
+                break;
+        }
+        DataPtr = cTmpBuf;
+    }
+    if (DataLen != targetLength)
+        return IDS_22_008;
+
+
+    memcpy(targetDataPtr, DataPtr, DataLen);
+
+}
+
+unsigned long  ODBC::ConvertAnyToTimeStampType(SQLINTEGER      ODBCAppVersion,
+        SQLSMALLINT   CDataType,
+        SQLPOINTER    srcDataPtr,
+        SQLINTEGER    srcLength,
+        CDescRec*     targetDescPtr,
+        ICUConverter* iconv,
+        SQLPOINTER    targetDataPtr,
+        BOOL          RWRSFormat,
+        UCHAR         *errorMsg)
+{
+    SQLSMALLINT         ODBCDataType    = targetDescPtr->m_ODBCDataType;
+    SQLSMALLINT         SQLDataType     = targetDescPtr->m_SQLDataType;
+    SQLSMALLINT         targetScale     = targetDescPtr->m_ODBCScale;
+    SQLSMALLINT         targetUnsigned  = targetDescPtr->m_SQLUnsigned;
+    SQLINTEGER          targetPrecision = targetDescPtr->m_ODBCPrecision;
+    SQLINTEGER          targetCharSet   = targetDescPtr->m_SQLCharset;
+    SQLINTEGER          translateLength = 0;
+    SQLINTEGER          targetLength    = targetDescPtr->m_SQLOctetLength;
+    SQLSMALLINT         SQLDatetimeCode = targetDescPtr->m_SQLDatetimeCode;
+    short               i               = 0;
+    SQLPOINTER          DataPtr         = NULL;
+    SQLINTEGER          DataLen         = DRVR_PENDING;
+    char                srcDataLocale[256] = {0};
+    CHAR                cTmpBuf[256]    = {0};
+    short               datetime_parts[8] = {0};
+    SQLUINTEGER         ulFraction      = 0;
+    CHAR                cTmpFraction[10] = {0};
+    unsigned long       retCode         = SQL_SUCCESS;
+    TIMESTAMP_TYPES     SQLTimestamp;
+    DATE_STRUCT         *dateTmp        = NULL;
+    TIME_STRUCT         *timeTmp        = NULL;
+    TIMESTAMP_STRUCT    *timestampTmp   = NULL;
+    TIMESTAMP_TYPES     *pSQLTimestamp  = NULL;
+
+    switch (CDataType)
+    {
+        case SQL_C_WCHAR:
+            if (iconv->isAppUTF16())
+            {
+                if (srcLength != SQL_NTS)
+                    srcLength = srcLength/2;
+                // translate from UTF16
+                if (iconv->WCharToUTF8((UChar*)srcDataPtr, srcLength, srcDataLocale, sizeof(srcDataLocale), (int*)&translateLength, (char*)errorMsg) != SQL_SUCCESS)
+                    return IDS_193_DRVTODS_ERROR;
+                srcDataPtr = srcDataLocale;
+                srcLength = translateLength;
+            }
+        case SQL_C_CHAR:
+            if (ConvertCharToSQLDate(srcDataPtr, srcLength, ODBCDataType, &SQLTimestamp, targetPrecision)
+                    != SQL_SUCCESS)
+                return IDS_22_008;
+            memcpy(&ulFraction, &SQLTimestamp.fraction, sizeof(UDWORD_P));
+            if (targetPrecision > 0)
+            {
+                sprintf(cTmpFraction, "%0*lu", targetPrecision, ulFraction);
+            }
+            break;
+        case SQL_C_DATE:
+        case SQL_C_TYPE_DATE:
+            dateTmp = (DATE_STRUCT *)srcDataPtr;
+
+            for (i = 0 ; i < 8 ; i++)
+                datetime_parts[i] = 0;
+            datetime_parts[0] = dateTmp->year;
+            datetime_parts[1] = dateTmp->month;
+            datetime_parts[2] = dateTmp->day;
+            if (!checkDatetimeValue(datetime_parts))
+                return IDS_22_008;
+
+            SQLTimestamp.year = dateTmp->year;
+            SQLTimestamp.month = dateTmp->month;
+            SQLTimestamp.day = dateTmp->day;
+            SQLTimestamp.hour = 0;
+            SQLTimestamp.minute = 0;
+            SQLTimestamp.second = 0;
+            memset(&SQLTimestamp.fraction, 0, sizeof(UDWORD_P));
+            ulFraction = 0;
+            if (targetPrecision > 0)
+            {
+                sprintf(cTmpBuf, "%06u", ulFraction);
+                cTmpBuf[targetPrecision] = 0;
+                strcpy(cTmpFraction,cTmpBuf);
+                //              ulFraction = atol(cTmpBuf);
+            }
+            break;
+        case SQL_C_TIME:
+        case SQL_C_TYPE_TIME:
+            struct tm *newtime;
+            time_t long_time;
+
+            time( &long_time );                 /* Get time as long integer. */
+            newtime = localtime( &long_time );  /* Convert to local time. */
+
+            timeTmp = (TIME_STRUCT *)srcDataPtr;
+
+            for (i = 0 ; i < 8 ; i++)
+                datetime_parts[i] = 0;
+            datetime_parts[0] = newtime->tm_year+1900;
+            datetime_parts[1] = newtime->tm_mon+1;
+            datetime_parts[2] = newtime->tm_mday;
+            datetime_parts[3] = timeTmp->hour;
+            datetime_parts[4] = timeTmp->minute;
+            datetime_parts[5] = timeTmp->second;
+            if (!checkDatetimeValue(datetime_parts))
+                return IDS_22_008;
+
+            SQLTimestamp.year = newtime->tm_year+1900;
+            SQLTimestamp.month = newtime->tm_mon+1;
+            SQLTimestamp.day = newtime->tm_mday;
+            SQLTimestamp.hour = timeTmp->hour;
+            SQLTimestamp.minute = timeTmp->minute;
+            SQLTimestamp.second = timeTmp->second;
+            memset(&SQLTimestamp.fraction, 0, sizeof(UDWORD_P));
+            ulFraction = 0;
+            if (targetPrecision > 0)
+            {
+                sprintf(cTmpBuf, "%06u", ulFraction);
+                cTmpBuf[targetPrecision] = 0;
+                strcpy(cTmpFraction,cTmpBuf);
+                //              ulFraction = atol(cTmpBuf);
+            }
+            break;
+        case SQL_C_TIMESTAMP:
+        case SQL_C_TYPE_TIMESTAMP:
+        case SQL_C_DEFAULT:
+            timestampTmp = (TIMESTAMP_STRUCT *)srcDataPtr;
+            // SQL/MX fraction precision is max 6 digits but ODBC accepts max precision 9 digits
+            // conversion from nano seconds to fraction of a second
+            ulFraction = (UDWORD_P)timestampTmp->fraction;
+            if (targetPrecision > 0)
+                ulFraction = (ulFraction * pow(10,targetPrecision)) / 1000000000.0;
+            else
+                ulFraction = 0;
+            sprintf(cTmpBuf, "%06u", ulFraction);
+            strcpy(cTmpFraction,&cTmpBuf[6 - targetPrecision]);
+
+            for (i = 0 ; i < 8 ; i++)
+                datetime_parts[i] = 0;
+            datetime_parts[0] = timestampTmp->year;
+            datetime_parts[1] = timestampTmp->month;
+            datetime_parts[2] = timestampTmp->day;
+            datetime_parts[3] = timestampTmp->hour;
+            datetime_parts[4] = timestampTmp->minute;
+            datetime_parts[5] = timestampTmp->second;
+            datetime_parts[6] = (short)(ulFraction/1000);
+            datetime_parts[7] = (short)(ulFraction%1000);
+            if (!checkDatetimeValue(datetime_parts))
+                return IDS_22_008;
+
+            SQLTimestamp.year = timestampTmp->year;
+            SQLTimestamp.month = timestampTmp->month;
+            SQLTimestamp.day = timestampTmp->day;
+            SQLTimestamp.hour = timestampTmp->hour;
+            SQLTimestamp.minute = timestampTmp->minute;
+            SQLTimestamp.second = timestampTmp->second;
+            memset(&SQLTimestamp.fraction, 0, sizeof(UDWORD_P));
+            if (targetPrecision > 0)
+                memcpy(&SQLTimestamp.fraction, &ulFraction, sizeof(SQLUINTEGER));
+            break;
+        case SQL_C_BINARY:
+            if (srcLength != targetLength)
+                return IDS_22_003;
+            DataPtr = srcDataPtr;
+            break;
+        default:
+            return IDS_07_006;
+    }
+    if (DataPtr == NULL)
+        DataPtr = &SQLTimestamp;
+    if(RWRSFormat == 1)
+        DataLen = sizeof(SQLTimestamp)-1; // since it is only 11 bytes that matters
+ //   OutLen = DataLen; // in case user creates a table as datetime year to second,
+    // SQL/MX returns OutLen as 7 bytes
+    // Non-standard timestamp table year to second.
+    if (CDataType != SQL_C_BINARY && RWRSFormat == 0)
+    {
+        pSQLTimestamp = (TIMESTAMP_TYPES*)DataPtr;
+        switch  (SQLDatetimeCode)
+        {
+            case SQLDTCODE_TIME:
+                if (targetPrecision > 0)
+                    DataLen = sprintf(cTmpBuf,"%02d:%02d:%02d.%s",
+                            pSQLTimestamp->hour,pSQLTimestamp->minute,pSQLTimestamp->second,
+                            cTmpFraction);
+                else
+                    DataLen = sprintf(cTmpBuf,"%02d",
+                            pSQLTimestamp->hour,pSQLTimestamp->minute,pSQLTimestamp->second);
+                break;
+            case SQLDTCODE_YEAR_TO_HOUR:
+                DataLen = sprintf(cTmpBuf,"%04d-%02d-%02d %02d",
+                        pSQLTimestamp->year,pSQLTimestamp->month,pSQLTimestamp->day,
+                        pSQLTimestamp->hour);
+                break;
+            case SQLDTCODE_YEAR_TO_MINUTE:
+                DataLen = sprintf(cTmpBuf,"%04d-%02d-%02d %02d:%02d",
+                        pSQLTimestamp->year,pSQLTimestamp->month,pSQLTimestamp->day,
+                        pSQLTimestamp->hour,pSQLTimestamp->minute);
+                break;
+            case SQLDTCODE_MONTH_TO_HOUR:
+                DataLen = sprintf(cTmpBuf,"%02d-%02d %02d",
+                        pSQLTimestamp->month,pSQLTimestamp->day,
+                        pSQLTimestamp->hour);
+                break;
+            case SQLDTCODE_MONTH_TO_MINUTE:
+                DataLen = sprintf(cTmpBuf,"%02d-%02d %02d:%02d",
+                        pSQLTimestamp->month,pSQLTimestamp->day,
+                        pSQLTimestamp->hour,pSQLTimestamp->minute);
+                break;
+            case SQLDTCODE_MONTH_TO_SECOND:
+                if (targetPrecision > 0)
+                    DataLen = sprintf(cTmpBuf,"%02d-%02d %02d:%02d:%02d.%s",
+                            pSQLTimestamp->month,pSQLTimestamp->day,
+                            pSQLTimestamp->hour,pSQLTimestamp->minute,pSQLTimestamp->second,
+                            cTmpFraction);
+                else
+                    DataLen = sprintf(cTmpBuf,"%02d-%02d %02d:%02d:%02d",
+                            pSQLTimestamp->month,pSQLTimestamp->day,
+                            pSQLTimestamp->hour,pSQLTimestamp->minute,pSQLTimestamp->second);
+                break;
+            case SQLDTCODE_DAY_TO_HOUR:
+                DataLen = sprintf(cTmpBuf,"%02d %02d",
+                        pSQLTimestamp->day,
+                        pSQLTimestamp->hour);
+                break;
+            case SQLDTCODE_DAY_TO_MINUTE:
+                DataLen = sprintf(cTmpBuf,"%02d %02d:%02d",
+                        pSQLTimestamp->day,
+                        pSQLTimestamp->hour,pSQLTimestamp->minute);
+                break;
+            case SQLDTCODE_DAY_TO_SECOND:
+                if (targetPrecision > 0)
+                    DataLen = sprintf(cTmpBuf,"%02d %02d:%02d:%02d.%s",
+                            pSQLTimestamp->day,
+                            pSQLTimestamp->hour,pSQLTimestamp->minute,pSQLTimestamp->second,
+                            cTmpFraction);
+                else
+                    DataLen = sprintf(cTmpBuf,"%02d %02d:%02d:%02d",
+                            pSQLTimestamp->day,
+                            pSQLTimestamp->hour,pSQLTimestamp->minute,pSQLTimestamp->second);
+                break;
+            case SQLDTCODE_HOUR:
+                DataLen = sprintf(cTmpBuf,"%02d",pSQLTimestamp->hour);
+                break;
+            case SQLDTCODE_HOUR_TO_MINUTE:
+                DataLen = sprintf(cTmpBuf,"%02d:%02d",pSQLTimestamp->hour,pSQLTimestamp->minute);
+                break;
+            case SQLDTCODE_MINUTE:
+                DataLen = sprintf(cTmpBuf,"%02d",pSQLTimestamp->minute);
+                break;
+            case SQLDTCODE_MINUTE_TO_SECOND:
+                if (targetPrecision > 0)
+                    DataLen = sprintf(cTmpBuf,"%02d:%02d.%s",pSQLTimestamp->minute,pSQLTimestamp->second,cTmpFraction);
+                else
+                    DataLen = sprintf(cTmpBuf,"%02d:%02d",pSQLTimestamp->minute,pSQLTimestamp->second);
+                break;
+            case SQLDTCODE_SECOND:
+                if (targetPrecision > 0)
+                    DataLen = sprintf(cTmpBuf,"%02d.%s",pSQLTimestamp->second,cTmpFraction);
+                else
+                    DataLen = sprintf(cTmpBuf,"%02d",pSQLTimestamp->second);
+                break;
+            default:
+                if (targetPrecision > 0)
+                    DataLen = sprintf(cTmpBuf,"%04d-%02d-%02d %02d:%02d:%02d.%s",
+                            pSQLTimestamp->year,pSQLTimestamp->month,pSQLTimestamp->day,
+                            pSQLTimestamp->hour,pSQLTimestamp->minute,pSQLTimestamp->second,
+                            cTmpFraction);
+                else
+                    DataLen = sprintf(cTmpBuf,"%04d-%02d-%02d %02d:%02d:%02d",
+                            pSQLTimestamp->year,pSQLTimestamp->month,pSQLTimestamp->day,
+                            pSQLTimestamp->hour,pSQLTimestamp->minute,pSQLTimestamp->second);
+                break;
+
+        }
+        DataPtr = cTmpBuf;
+    }
+    if (DataLen != targetLength)
+        return IDS_22_003;
+
+    memcpy(targetDataPtr, DataPtr, DataLen);
+
+}
+
 
 unsigned long ODBC::ConvertCharToNumeric(SQLPOINTER srcDataPtr,
 								   SQLINTEGER srcLength,
