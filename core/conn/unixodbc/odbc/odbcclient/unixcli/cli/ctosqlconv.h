@@ -77,6 +77,76 @@ unsigned long ConvertCToSQL(SQLINTEGER	ODBCAppVersion,
 							BOOL		RWRSFormat = 0,
 							SQLINTEGER datetimeIntervalPrecision = 0);
 
+SQLRETURN   MemToNumeric(SQLPOINTER  DataPtr,
+            SQLINTEGER &    DataLen,
+            CDescRec*       targetDescPtr,
+            SQLSMALLINT     CDataType,
+            BOOL            useDouble,
+            double          dTmp,
+            BOOL            negative,
+            __int64         decimalPart,
+            __int64         integralPart,
+            long            leadZeros,
+            ICUConverter*   iconv,
+            SQLPOINTER &    outDataPtr);
+
+
+unsigned long  ConvertAnyToNumeric(SQLINTEGER      ODBCAppVersion,
+        SQLSMALLINT   CDataType,
+        SQLPOINTER    srcDataPtr,
+        SQLINTEGER    srcLength,
+        CDescRec*     targetDescPtr,
+        ICUConverter* iconv,
+        SQLPOINTER    targetDataPtr, 
+        UCHAR         *errorMsg);
+
+
+unsigned long  ConvertNumToNumSimple(SQLSMALLINT   CDataType,
+                    SQLPOINTER    srcDataPtr,
+                    SQLINTEGER    srcLength,
+                    CDescRec*     targetDescPtr,
+                    ICUConverter* iconv,
+                    SQLPOINTER    targetDataPtr, 
+                    UCHAR         *errorMsg);
+
+
+
+SQLRETURN  MemNumToNum(SQLPOINTER  DataPtr,
+            SQLINTEGER &    DataLen,
+            CDescRec*       targetDescPtr,
+            SQLSMALLINT     CDataType,
+            BOOL            useDouble,
+            double          dTmp,
+            BOOL            negative,
+            __int64         decimalPart,
+            __int64         integralPart,
+            long            leadZeros,
+            BOOL            signedInteger,
+            ICUConverter*   iconv,
+            SQLPOINTER &    outDataPtr);
+
+
+
+unsigned long  ConvertAnyTypeToCharsSimple(SQLINTEGER      ODBCAppVersion,
+                          SQLSMALLINT   CDataType,
+                          SQLPOINTER    srcDataPtr,
+                          SQLINTEGER    srcLength,
+                          CDescRec*     targetDescPtr,
+                          ICUConverter* iconv,
+                          SQLPOINTER    targetDataPtr, 
+                          UCHAR         *errorMsg);
+
+SQLRETURN   ConvertCharset(SQLPOINTER  DataPtr,
+            SQLINTEGER &    DataLen,
+            CDescRec*       targetDescPtr,
+            SQLSMALLINT     CDataType,
+            ICUConverter*   iconv,
+            SQLPOINTER      targetDataPtr,
+            SQLPOINTER &    outDataPtr, 
+            SQLINTEGER      OutLen ,
+            short           Offset,
+            UCHAR           *errorMsg);
+
 
 unsigned long  ConvertToBigint(SQLINTEGER	ODBCAppVersion,
         SQLSMALLINT   CDataType,
