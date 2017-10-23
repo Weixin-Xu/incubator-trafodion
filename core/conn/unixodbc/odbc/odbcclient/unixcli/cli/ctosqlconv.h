@@ -187,6 +187,24 @@ unsigned long  ConvertAnyToTimeStampType(SQLINTEGER	   ODBCAppVersion,
         BOOL          RWRSFormat,
         UCHAR         *errorMsg);
 
+SQLRETURN DataTypeTransform(SQLSMALLINT  & cTmpDataType,SQLSMALLINT  CDataType,SQLSMALLINT ODBCDataType);
+
+SQLRETURN TmpBufferFitting(SQLSMALLINT ODBCDataType,SQLSMALLINT CDataType,SQLPOINTER    srcDataPtr,CHAR * cTmpBuf);
+
+
+unsigned long  ConvertAnyToTimeIntervalType(SQLINTEGER     ODBCAppVersion,
+        SQLSMALLINT   CDataType,
+        SQLPOINTER    srcDataPtr,
+        SQLINTEGER    srcLength,
+        CDescRec*     targetDescPtr,
+        ICUConverter* iconv,
+        SQLPOINTER    targetDataPtr, 
+        BOOL          RWRSFormat,
+        UCHAR         *errorMsg,
+        SQLINTEGER  datetimeIntervalPrecision);
+
+
+
 unsigned long ConvertCharToNumeric(SQLPOINTER srcDataPtr, 
 								   SQLINTEGER srcLength, 
 								   double &dTmp);

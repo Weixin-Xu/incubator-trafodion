@@ -5998,6 +5998,892 @@ unsigned long  ODBC::ConvertAnyToTimeStampType(SQLINTEGER      ODBCAppVersion,
 
 }
 
+SQLRETURN ODBC::DataTypeTransform(SQLSMALLINT  & cTmpDataType,SQLSMALLINT  CDataType,SQLSMALLINT ODBCDataType)
+{
+    if (CDataType == SQL_C_DEFAULT)
+    {
+        switch (ODBCDataType)
+        {
+            case SQL_INTERVAL_MONTH:
+                cTmpDataType = SQL_C_INTERVAL_MONTH;
+                break;
+            case SQL_INTERVAL_YEAR:
+                cTmpDataType = SQL_C_INTERVAL_YEAR;
+                break;
+            case SQL_INTERVAL_YEAR_TO_MONTH:
+                cTmpDataType = SQL_C_INTERVAL_YEAR_TO_MONTH;
+                break;
+            case SQL_INTERVAL_DAY:
+                cTmpDataType = SQL_C_INTERVAL_DAY;
+                break;
+            case SQL_INTERVAL_HOUR:
+                cTmpDataType = SQL_C_INTERVAL_HOUR;
+                break;
+            case SQL_INTERVAL_MINUTE:
+                cTmpDataType = SQL_C_INTERVAL_MINUTE;
+                break;
+            case SQL_INTERVAL_SECOND:
+                cTmpDataType = SQL_C_INTERVAL_SECOND;
+                break;
+            case SQL_INTERVAL_DAY_TO_HOUR:
+                cTmpDataType = SQL_C_INTERVAL_DAY_TO_HOUR;
+                break;
+            case SQL_INTERVAL_DAY_TO_MINUTE:
+                cTmpDataType = SQL_C_INTERVAL_DAY_TO_MINUTE;
+                break;
+            case SQL_INTERVAL_DAY_TO_SECOND:
+                cTmpDataType = SQL_C_INTERVAL_DAY_TO_SECOND;
+                break;
+            case SQL_INTERVAL_HOUR_TO_MINUTE:
+                cTmpDataType = SQL_C_INTERVAL_HOUR_TO_MINUTE;
+                break;
+            case SQL_INTERVAL_HOUR_TO_SECOND:
+                cTmpDataType = SQL_C_INTERVAL_HOUR_TO_SECOND;
+                break;
+            case SQL_INTERVAL_MINUTE_TO_SECOND:
+                cTmpDataType = SQL_C_INTERVAL_MINUTE_TO_SECOND;
+                break;
+            default:
+                return IDS_07_006;
+        }
+    }
+
+    return SQL_SUCCESS;
+
+}
+
+SQLRETURN ODBC::TmpBufferFitting(SQLSMALLINT ODBCDataType,SQLSMALLINT CDataType,SQLPOINTER    srcDataPtr,CHAR * cTmpBuf)
+{
+
+    SQL_INTERVAL_STRUCT *intervalTmp  = (SQL_INTERVAL_STRUCT *)srcDataPtr;
+    switch (ODBCDataType)
+    {
+        case SQL_INTERVAL_MONTH:
+            if (intervalTmp->interval_sign == SQL_TRUE)
+                sprintf(cTmpBuf,"-%ld",intervalTmp->intval.year_month.month);
+            else
+                sprintf(cTmpBuf,"%ld",intervalTmp->intval.year_month.month);
+            break;
+        case SQL_INTERVAL_YEAR:
+            if (intervalTmp->interval_sign == SQL_TRUE)
+                sprintf(cTmpBuf,"-%ld",intervalTmp->intval.year_month.year);
+            else
+                sprintf(cTmpBuf,"%ld",intervalTmp->intval.year_month.year);
+            break;
+
+        case SQL_INTERVAL_YEAR_TO_MONTH:
+            if(CDataType == SQL_C_INTERVAL_MONTH){
+                if (intervalTmp->interval_sign == SQL_TRUE)
+                    sprintf(cTmpBuf,"-00-%ld",intervalTmp->intval.year_month.month);
+                else
+                    sprintf(cTmpBuf,"00-%ld",intervalTmp->intval.year_month.month);
+            }
+
+            if(CDataType == SQL_C_INTERVAL_YEAR)
+            {
+
+                if (intervalTmp->interval_sign == SQL_TRUE)
+                    sprintf(cTmpBuf,"-%ld-00",intervalTmp->intval.year_month.year);
+                else
+                    sprintf(cTmpBuf,"%ld-00",intervalTmp->intval.year_month.year);
+
+            }
+
+            if(CDataType == SQL_C_INTERVAL_YEAR_TO_MONTH)
+            {
+                if (intervalTmp->interval_sign == SQL_TRUE)
+                    sprintf(cTmpBuf,"-%ld-%ld",intervalTmp->intval.year_month.year, intervalTmp->intval.year_month.month);
+                else
+                    sprintf(cTmpBuf,"%ld-%ld",intervalTmp->intval.year_month.year, intervalTmp->intval.year_month.month);
+
+            }
+
+            break;
+        case SQL_INTERVAL_DAY:
+            if (intervalTmp->interval_sign == SQL_TRUE)
+                sprintf(cTmpBuf,"-%ld",intervalTmp->intval.day_second.day);
+            else
+                sprintf(cTmpBuf,"%ld",intervalTmp->intval.day_second.day);
+            break;
+
+        case SQL_INTERVAL_HOUR:
+
+            if(CDataType == SQL_C_INTERVAL_DAY_TO_MINUTE || CDataType == SQL_C_INTERVAL_DAY_TO_SECOND)
+            {
+                if (intervalTmp->interval_sign == SQL_TRUE)
+                    sprintf(cTmpBuf,"-%ld",intervalTmp->intval.day_second.hour);
+                else
+                    sprintf(cTmpBuf,"%ld",intervalTmp->intval.day_second.hour,intervalTmp->intval.day_second.minute);
+
+
+            }
+            else
+            {
+                if (intervalTmp->interval_sign == SQL_TRUE)
+                    sprintf(cTmpBuf,"-%ld", intervalTmp->intval.day_second.hour);
+                else
+                    sprintf(cTmpBuf,"%ld", intervalTmp->intval.day_second.hour);
+
+
+            }
+            break;
+        case SQL_INTERVAL_MINUTE:
+            if (intervalTmp->interval_sign == SQL_TRUE)
+                sprintf(cTmpBuf,"-%ld",intervalTmp->intval.day_second.minute);
+            else
+                sprintf(cTmpBuf,"%ld",intervalTmp->intval.day_second.minute);
+
+        case SQL_INTERVAL_SECOND:
+            if (intervalTmp->interval_sign == SQL_TRUE)
+            {
+                if (intervalTmp->intval.day_second.fraction == 0)
+                    sprintf(cTmpBuf,"-%ld",intervalTmp->intval.day_second.second);
+                else
+                    sprintf(cTmpBuf,"-%ld.%ld",intervalTmp->intval.day_second.second,intervalTmp->intval.day_second.fraction);
+            }
+            else
+            {
+                if (intervalTmp->intval.day_second.fraction == 0)
+                    sprintf(cTmpBuf,"%ld",intervalTmp->intval.day_second.second);
+                else
+                    sprintf(cTmpBuf,"%ld.%ld",intervalTmp->intval.day_second.second,intervalTmp->intval.day_second.fraction);
+            }
+            break;
+
+        case SQL_INTERVAL_DAY_TO_HOUR:
+            switch (CDataType)
+            {
+                case SQL_C_INTERVAL_DAY:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                        sprintf(cTmpBuf,"-%ld 00",intervalTmp->intval.day_second.day);
+                    else
+                        sprintf(cTmpBuf,"%ld 00",intervalTmp->intval.day_second.day);
+                    break;
+                case SQL_C_INTERVAL_HOUR:
+                case SQL_C_INTERVAL_HOUR_TO_MINUTE:
+                case SQL_C_INTERVAL_HOUR_TO_SECOND:
+
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                        sprintf(cTmpBuf,"-00 %ld",intervalTmp->intval.day_second.hour);
+                    else
+                        sprintf(cTmpBuf,"00 %ld",intervalTmp->intval.day_second.hour);
+                    break;
+
+                case SQL_C_INTERVAL_DAY_TO_HOUR:
+                case SQL_C_INTERVAL_DAY_TO_MINUTE:
+                case SQL_C_INTERVAL_DAY_TO_SECOND:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                        sprintf(cTmpBuf,"-%ld %ld",intervalTmp->intval.day_second.day,intervalTmp->intval.day_second.hour);
+                    else
+                        sprintf(cTmpBuf,"%ld %ld",intervalTmp->intval.day_second.day,intervalTmp->intval.day_second.hour);
+                    break;
+
+
+            }
+            break;
+        case SQL_INTERVAL_DAY_TO_MINUTE:
+            switch (CDataType)
+            {
+                case SQL_C_INTERVAL_DAY:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                        sprintf(cTmpBuf,"-%ld 00:00",intervalTmp->intval.day_second.day);
+                    else
+                        sprintf(cTmpBuf,"%ld 00:00",intervalTmp->intval.day_second.day);
+                    break;
+                case SQL_C_INTERVAL_HOUR:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                        sprintf(cTmpBuf,"-00 %ld:00",intervalTmp->intval.day_second.hour);
+                    else
+                        sprintf(cTmpBuf,"00 %ld:00",intervalTmp->intval.day_second.hour);
+                    break;
+                case SQL_C_INTERVAL_MINUTE:
+                case SQL_C_INTERVAL_MINUTE_TO_SECOND:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                        sprintf(cTmpBuf,"-00 00:%ld",intervalTmp->intval.day_second.minute);
+                    else
+                        sprintf(cTmpBuf,"00 00:%ld",intervalTmp->intval.day_second.minute);
+                    break;
+                case SQL_C_INTERVAL_DAY_TO_HOUR:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                        sprintf(cTmpBuf,"-%ld %ld:00",intervalTmp->intval.day_second.day,intervalTmp->intval.day_second.hour);
+                    else
+                        sprintf(cTmpBuf,"%ld %ld:00",intervalTmp->intval.day_second.day,intervalTmp->intval.day_second.hour);
+                    break;
+                case SQL_C_INTERVAL_DAY_TO_MINUTE:
+                case SQL_C_INTERVAL_DAY_TO_SECOND:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                        sprintf(cTmpBuf,"-%ld %ld:%ld",intervalTmp->intval.day_second.day,intervalTmp->intval.day_second.hour,intervalTmp->intval.day_second.minute);
+                    else
+                        sprintf(cTmpBuf,"%ld %ld:%ld",intervalTmp->intval.day_second.day,intervalTmp->intval.day_second.hour,intervalTmp->intval.day_second.minute);
+                    break;
+                case SQL_C_INTERVAL_HOUR_TO_MINUTE:
+                case SQL_C_INTERVAL_HOUR_TO_SECOND:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                        sprintf(cTmpBuf,"-00 %ld:%ld",intervalTmp->intval.day_second.hour,intervalTmp->intval.day_second.minute);
+                    else
+                        sprintf(cTmpBuf,"00 %ld:%ld",intervalTmp->intval.day_second.hour,intervalTmp->intval.day_second.minute);
+                    break;
+
+
+
+            }
+            break;
+        case SQL_INTERVAL_DAY_TO_SECOND:
+            switch (CDataType)
+            {
+                case SQL_C_INTERVAL_DAY:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                        sprintf(cTmpBuf,"-%ld 00:00:00",intervalTmp->intval.day_second.day);
+                    else
+                        sprintf(cTmpBuf,"%ld 00:00:00",intervalTmp->intval.day_second.day);
+                    break;
+                case SQL_C_INTERVAL_HOUR:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                        sprintf(cTmpBuf,"-00 %ld:00:00",intervalTmp->intval.day_second.hour);
+                    else
+                        sprintf(cTmpBuf,"00 %ld:00:00",intervalTmp->intval.day_second.hour);
+                    break;
+
+                case SQL_C_INTERVAL_MINUTE:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                        sprintf(cTmpBuf,"-00 00:%ld:00",intervalTmp->intval.day_second.minute);
+                    else
+                        sprintf(cTmpBuf,"00 00:%ld:00",intervalTmp->intval.day_second.minute);
+                    break;
+
+                case SQL_C_INTERVAL_SECOND:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                    {
+                        if (intervalTmp->intval.day_second.fraction == 0)
+                            sprintf(cTmpBuf,"-00 00:00:%ld",intervalTmp->intval.day_second.second);
+                        else
+                            sprintf(cTmpBuf,"-00 00:00:%ld.%ld",intervalTmp->intval.day_second.second,intervalTmp->intval.day_second.fraction);
+                    }
+                    else
+                    {
+                        if (intervalTmp->intval.day_second.fraction == 0)
+                            sprintf(cTmpBuf,"00 00:00:%ld",intervalTmp->intval.day_second.second);
+                        else
+                            sprintf(cTmpBuf,"00 00:00:%ld.%ld",intervalTmp->intval.day_second.second,intervalTmp->intval.day_second.fraction);
+                    }
+                    break;
+
+                case SQL_C_INTERVAL_DAY_TO_HOUR:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                        sprintf(cTmpBuf,"-%ld %ld:00:00",intervalTmp->intval.day_second.day,intervalTmp->intval.day_second.hour);
+                    else
+                        sprintf(cTmpBuf,"%ld %ld:00:00",intervalTmp->intval.day_second.day,intervalTmp->intval.day_second.hour);
+                    break;
+                case SQL_C_INTERVAL_DAY_TO_MINUTE:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                        sprintf(cTmpBuf,"-%ld %ld:%ld:00",intervalTmp->intval.day_second.day,intervalTmp->intval.day_second.hour,intervalTmp->intval.day_second.minute);
+                    else
+                        sprintf(cTmpBuf,"%ld %ld:%ld:00",intervalTmp->intval.day_second.day,intervalTmp->intval.day_second.hour,intervalTmp->intval.day_second.minute);
+                    break;
+                case SQL_C_INTERVAL_DAY_TO_SECOND:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                    {
+                        if (intervalTmp->intval.day_second.fraction == 0)
+                            sprintf(cTmpBuf,"-%d %d:%d:%d",intervalTmp->intval.day_second.day,intervalTmp->intval.day_second.hour,intervalTmp->intval.day_second.minute,intervalTmp->intval.day_second.second);
+                        else
+                            sprintf(cTmpBuf,"-%d %d:%d:%d.%d",intervalTmp->intval.day_second.day,intervalTmp->intval.day_second.hour,intervalTmp->intval.day_second.minute,intervalTmp->intval.day_second.second,intervalTmp->intval.day_second.fraction);
+                    }
+                    else
+                    {
+                        if (intervalTmp->intval.day_second.fraction == 0)
+                            sprintf(cTmpBuf,"%d %d:%d:%d",intervalTmp->intval.day_second.day,intervalTmp->intval.day_second.hour,intervalTmp->intval.day_second.minute,intervalTmp->intval.day_second.second);
+                        else
+                            sprintf(cTmpBuf,"%d %d:%d:%d.%d",intervalTmp->intval.day_second.day,intervalTmp->intval.day_second.hour,intervalTmp->intval.day_second.minute,intervalTmp->intval.day_second.second,intervalTmp->intval.day_second.fraction);
+                    }
+                    break;
+
+                case SQL_C_INTERVAL_HOUR_TO_MINUTE:
+                case SQL_C_INTERVAL_HOUR_TO_SECOND:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                        sprintf(cTmpBuf,"-00 %ld:%ld:00",intervalTmp->intval.day_second.hour,intervalTmp->intval.day_second.minute);
+                    else
+                        sprintf(cTmpBuf,"00 %ld:%ld:00",intervalTmp->intval.day_second.hour,intervalTmp->intval.day_second.minute);
+                    break;
+                case SQL_C_INTERVAL_MINUTE_TO_SECOND:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                    {
+                        if (intervalTmp->intval.day_second.fraction == 0)
+                            sprintf(cTmpBuf,"-00 00:%ld:%ld",intervalTmp->intval.day_second.minute,intervalTmp->intval.day_second.second);
+                        else
+                            sprintf(cTmpBuf,"-00 00:%ld:%ld.%ld",intervalTmp->intval.day_second.minute,intervalTmp->intval.day_second.second,intervalTmp->intval.day_second.fraction);
+                    }
+                    else
+                    {
+                        if (intervalTmp->intval.day_second.fraction == 0)
+                            sprintf(cTmpBuf,"00 00:%ld:%ld",intervalTmp->intval.day_second.minute,intervalTmp->intval.day_second.second);
+                        else
+                            sprintf(cTmpBuf,"00 00:%ld:%ld.%ld",intervalTmp->intval.day_second.minute,intervalTmp->intval.day_second.second,intervalTmp->intval.day_second.fraction);
+                    }
+                    break;
+
+
+
+            }
+            break;
+        case SQL_INTERVAL_HOUR_TO_MINUTE:
+            switch (CDataType)
+            {
+                case SQL_C_INTERVAL_HOUR:
+                case SQL_C_INTERVAL_DAY_TO_HOUR:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                        sprintf(cTmpBuf,"-%ld:00",intervalTmp->intval.day_second.hour);
+                    else
+                        sprintf(cTmpBuf,"%ld:00",intervalTmp->intval.day_second.hour);
+                    break;
+                case SQL_C_INTERVAL_MINUTE:
+                case SQL_C_INTERVAL_MINUTE_TO_SECOND:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                        sprintf(cTmpBuf,"-00:%ld",intervalTmp->intval.day_second.minute);
+                    else
+                        sprintf(cTmpBuf,"00:%ld",intervalTmp->intval.day_second.minute);
+                    break;
+                case SQL_C_INTERVAL_DAY_TO_MINUTE:
+                case SQL_C_INTERVAL_DAY_TO_SECOND:
+                case SQL_C_INTERVAL_HOUR_TO_MINUTE:
+                case SQL_C_INTERVAL_HOUR_TO_SECOND:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                        sprintf(cTmpBuf,"-%ld:%ld",intervalTmp->intval.day_second.hour,intervalTmp->intval.day_second.minute);
+                    else
+                        sprintf(cTmpBuf,"%ld:%ld",intervalTmp->intval.day_second.hour,intervalTmp->intval.day_second.minute);
+                    break;
+
+            }
+            break;
+        case SQL_INTERVAL_HOUR_TO_SECOND:
+            switch(CDataType)
+            {
+                case SQL_C_INTERVAL_HOUR:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                        sprintf(cTmpBuf,"-%ld:00:00",intervalTmp->intval.day_second.hour);
+                    else
+                        sprintf(cTmpBuf,"%ld:00:00",intervalTmp->intval.day_second.hour);
+                    break;
+
+                case SQL_C_INTERVAL_MINUTE:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                        sprintf(cTmpBuf,"-00:%ld:00",intervalTmp->intval.day_second.minute);
+                    else
+                        sprintf(cTmpBuf,"00:%ld:00",intervalTmp->intval.day_second.minute);
+                    break;
+
+                case SQL_C_INTERVAL_SECOND:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                    {
+                        if (intervalTmp->intval.day_second.fraction == 0)
+                            sprintf(cTmpBuf,"-00:00:%ld",intervalTmp->intval.day_second.second);
+                        else
+                            sprintf(cTmpBuf,"-00:00:%ld.%ld",intervalTmp->intval.day_second.second,intervalTmp->intval.day_second.fraction);
+                    }
+                    else
+                    {
+                        if (intervalTmp->intval.day_second.fraction == 0)
+                            sprintf(cTmpBuf,"00:00:%ld",intervalTmp->intval.day_second.second);
+                        else
+                            sprintf(cTmpBuf,"00:00:%ld.%ld",intervalTmp->intval.day_second.second,intervalTmp->intval.day_second.fraction);
+                    }
+                    break;
+                case SQL_C_INTERVAL_DAY_TO_HOUR:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                        sprintf(cTmpBuf,"-%ld:00:00", intervalTmp->intval.day_second.hour);
+                    else
+                        sprintf(cTmpBuf,"%ld:00:00", intervalTmp->intval.day_second.hour);
+                    break;
+
+                case SQL_C_INTERVAL_DAY_TO_MINUTE:
+                case SQL_C_INTERVAL_HOUR_TO_MINUTE:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                        sprintf(cTmpBuf,"-%ld:%ld:00",intervalTmp->intval.day_second.hour,intervalTmp->intval.day_second.minute);
+                    else
+                        sprintf(cTmpBuf,"%ld:%ld:00",intervalTmp->intval.day_second.hour,intervalTmp->intval.day_second.minute);
+                    break;
+                case SQL_C_INTERVAL_DAY_TO_SECOND:
+                case SQL_C_INTERVAL_HOUR_TO_SECOND:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                    {
+                        if (intervalTmp->intval.day_second.fraction == 0)
+                            sprintf(cTmpBuf,"-%ld:%ld:%ld",intervalTmp->intval.day_second.hour,intervalTmp->intval.day_second.minute,intervalTmp->intval.day_second.second);
+                        else
+                            sprintf(cTmpBuf,"-%ld:%ld:%ld.%ld",intervalTmp->intval.day_second.hour,intervalTmp->intval.day_second.minute,intervalTmp->intval.day_second.second,intervalTmp->intval.day_second.fraction);
+                    }
+                    else
+                    {
+                        if (intervalTmp->intval.day_second.fraction == 0)
+                            sprintf(cTmpBuf,"%ld:%ld:%ld",intervalTmp->intval.day_second.hour,intervalTmp->intval.day_second.minute,intervalTmp->intval.day_second.second);
+                        else
+                            sprintf(cTmpBuf,"%ld:%ld:%ld.%ld",intervalTmp->intval.day_second.hour,intervalTmp->intval.day_second.minute,intervalTmp->intval.day_second.second,intervalTmp->intval.day_second.fraction);
+                    }
+                    break;
+                case SQL_C_INTERVAL_MINUTE_TO_SECOND:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                    {
+                        if (intervalTmp->intval.day_second.fraction == 0)
+                            sprintf(cTmpBuf,"-00:%ld:%ld",intervalTmp->intval.day_second.minute,intervalTmp->intval.day_second.second);
+                        else
+                            sprintf(cTmpBuf,"-00:%ld:%ld.%ld",intervalTmp->intval.day_second.minute,intervalTmp->intval.day_second.second,intervalTmp->intval.day_second.fraction);
+                    }
+                    else
+                    {
+                        if (intervalTmp->intval.day_second.fraction == 0)
+                            sprintf(cTmpBuf,"00:%ld:%ld",intervalTmp->intval.day_second.minute,intervalTmp->intval.day_second.second);
+                        else
+                            sprintf(cTmpBuf,"00:%ld:%ld.%ld",intervalTmp->intval.day_second.minute,intervalTmp->intval.day_second.second,intervalTmp->intval.day_second.fraction);
+                    }
+                    break;
+
+            }
+            break;
+        case SQL_INTERVAL_MINUTE_TO_SECOND:
+            switch(CDataType)
+            {
+
+                case SQL_C_INTERVAL_MINUTE:
+                case SQL_C_INTERVAL_HOUR_TO_MINUTE:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                        sprintf(cTmpBuf,"-%ld:00",intervalTmp->intval.day_second.minute);
+                    else
+                        sprintf(cTmpBuf,"%ld:00",intervalTmp->intval.day_second.minute);
+                    break;
+                case SQL_C_INTERVAL_SECOND:
+                    break;
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                    {
+                        if (intervalTmp->intval.day_second.fraction == 0)
+                            sprintf(cTmpBuf,"-00:%ld",intervalTmp->intval.day_second.second);
+                        else
+                            sprintf(cTmpBuf,"-00:%ld.%ld",intervalTmp->intval.day_second.second,intervalTmp->intval.day_second.fraction);
+                    }
+                    else
+                    {
+                        if (intervalTmp->intval.day_second.fraction == 0)
+                            sprintf(cTmpBuf,"00:%ld",intervalTmp->intval.day_second.second);
+                        else
+                            sprintf(cTmpBuf,"00:%ld.%ld",intervalTmp->intval.day_second.second,intervalTmp->intval.day_second.fraction);
+                    }
+                    break;
+
+                case SQL_C_INTERVAL_DAY_TO_MINUTE:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                        sprintf(cTmpBuf,"-%ld:00",intervalTmp->intval.day_second.minute);
+                    else
+                        sprintf(cTmpBuf,"%ld:00",intervalTmp->intval.day_second.minute);
+                    break;
+
+
+                case SQL_C_INTERVAL_DAY_TO_SECOND:
+                case SQL_C_INTERVAL_HOUR_TO_SECOND:
+                case SQL_C_INTERVAL_MINUTE_TO_SECOND:
+                    if (intervalTmp->interval_sign == SQL_TRUE)
+                    {
+                        if (intervalTmp->intval.day_second.fraction == 0)
+                            sprintf(cTmpBuf,"-%ld:%ld",intervalTmp->intval.day_second.minute,intervalTmp->intval.day_second.second);
+                        else
+                            sprintf(cTmpBuf,"-%ld:%ld.%ld",intervalTmp->intval.day_second.minute,intervalTmp->intval.day_second.second,intervalTmp->intval.day_second.fraction);
+                    }
+                    else
+                    {
+                        if (intervalTmp->intval.day_second.fraction == 0)
+                            sprintf(cTmpBuf,"%ld:%ld",intervalTmp->intval.day_second.minute,intervalTmp->intval.day_second.second);
+                        else
+                            sprintf(cTmpBuf,"%ld:%ld.%ld",intervalTmp->intval.day_second.minute,intervalTmp->intval.day_second.second,intervalTmp->intval.day_second.fraction);
+                    }
+                    break;
+
+
+
+
+
+            }
+            break;
+        default:
+            return IDS_22_003;
+
+
+    }
+    return SQL_SUCCESS;
+
+
+}
+
+unsigned long  ODBC::ConvertAnyToTimeIntervalType(SQLINTEGER       ODBCAppVersion,
+        SQLSMALLINT   CDataType,
+        SQLPOINTER    srcDataPtr,
+        SQLINTEGER    srcLength,
+        CDescRec*     targetDescPtr,
+        ICUConverter* iconv,
+        SQLPOINTER    targetDataPtr,
+        BOOL          RWRSFormat,
+        UCHAR         *errorMsg,
+        SQLINTEGER    datetimeIntervalPrecision)
+
+{
+    SQLSMALLINT         ODBCDataType    = targetDescPtr->m_ODBCDataType;
+    SQLSMALLINT         SQLDataType     = targetDescPtr->m_SQLDataType;
+    SQLSMALLINT         targetScale     = targetDescPtr->m_ODBCScale;
+    SQLSMALLINT         targetUnsigned  = targetDescPtr->m_SQLUnsigned;
+    SQLINTEGER          targetPrecision = targetDescPtr->m_ODBCPrecision;
+    SQLINTEGER          targetCharSet   = targetDescPtr->m_SQLCharset;
+    SQLINTEGER          translateLength = 0;
+    SQLINTEGER          targetLength    = targetDescPtr->m_SQLOctetLength;
+    SQLSMALLINT         SQLDatetimeCode = targetDescPtr->m_SQLDatetimeCode;
+    SQLPOINTER          outDataPtr      = targetDataPtr;
+    short               i               = 0;
+    short               runFunc         = 0;
+    SQLPOINTER          DataPtr         = NULL;
+    SQLINTEGER          DataLen         = DRVR_PENDING;
+    char                srcDataLocale[256] = {0};
+    CHAR                cTmpBuf[256]    = {0};
+    CHAR                cTmpBuf2[256]    = {0};
+    short               datetime_parts[8] = {0};
+    SQLUINTEGER         ulFraction      = 0;
+    CHAR                cTmpFraction[10] = {0};
+    unsigned long       retCode         = SQL_SUCCESS;
+    SQLSMALLINT         cTmpDataType    = CDataType;
+    BOOL                dataTruncatedWarning = FALSE;
+    short               Offset          = 0;    // Used for VARCHAR fields
+    double              dTmp            = 0;
+    SSHORT              sTmp            = 0;
+    USHORT              usTmp           = 0;
+    SLONG_P             lTmp            = 0;
+    ULONG_P             ulTmp           = 0;
+
+    retCode = DataTypeTransform(cTmpDataType,CDataType,ODBCDataType);
+    if(retCode != SQL_SUCCESS)
+        return retCode;
+    switch (cTmpDataType)
+    {
+        case SQL_C_WCHAR:
+            if (iconv->isAppUTF16())
+            {
+                if (srcLength != SQL_NTS)
+                    srcLength = srcLength/2;
+                // translate from UTF16
+                if (iconv->WCharToUTF8((UChar*)srcDataPtr, srcLength, srcDataLocale, sizeof(srcDataLocale), (int*)&translateLength, (char*)errorMsg) != SQL_SUCCESS)
+                    return IDS_193_DRVTODS_ERROR;
+                srcDataPtr = srcDataLocale;
+                srcLength = translateLength;
+            }
+        case SQL_C_CHAR:
+            if (srcLength == SQL_NTS)
+                DataLen = strlen((const char *)srcDataPtr);
+            else
+                DataLen = srcLength;
+            if (StripIntervalLiterals(srcDataPtr, srcLength, ODBCDataType, cTmpBuf) != SQL_SUCCESS)
+                return IDS_22_018;
+            break;
+        case SQL_C_BINARY:
+            if (srcLength == SQL_NTS)
+                DataLen = strlen((const char *)srcDataPtr);
+            else
+                DataLen = srcLength;
+            strcpy(cTmpBuf, (const char *)srcDataPtr);
+            break;
+        case SQL_C_SHORT:
+        case SQL_C_SSHORT:
+            sTmp = *(SSHORT *)srcDataPtr;
+            _ltoa(sTmp, cTmpBuf, 10);
+            break;
+        case SQL_C_USHORT:
+            usTmp = *(USHORT *)srcDataPtr;
+            _ultoa(usTmp, cTmpBuf, 10);
+            break;
+        case SQL_C_TINYINT:
+        case SQL_C_STINYINT:
+            sTmp = *(SCHAR *)srcDataPtr;
+            _ltoa(sTmp, cTmpBuf, 10);
+            break;
+        case SQL_C_UTINYINT:
+        case SQL_C_BIT:
+            usTmp = *(UCHAR *)srcDataPtr;
+            _ultoa(usTmp, cTmpBuf, 10);
+            break;
+        case SQL_C_SLONG:
+        case SQL_C_LONG:
+            lTmp = *(SLONG_P *)srcDataPtr;
+            _ltoa(lTmp, cTmpBuf, 10);
+            break;
+        case SQL_C_ULONG:
+            ulTmp = *(ULONG_P *)srcDataPtr;
+            _ultoa(ulTmp, cTmpBuf, 10);
+            break;
+        case SQL_C_FLOAT:
+            dTmp = *(float *)srcDataPtr;
+            if (!double_to_char (dTmp, FLT_DIG, cTmpBuf, sizeof(cTmpBuf)))
+                return IDS_22_001;
+            break;
+        case SQL_C_DOUBLE:
+            dTmp = *(double *)srcDataPtr;
+            if (!double_to_char (dTmp, DBL_DIG, cTmpBuf, sizeof(cTmpBuf)))
+                return IDS_22_001;
+            break;
+        case SQL_C_NUMERIC:
+            ConvertCNumericToChar((SQL_NUMERIC_STRUCT*)srcDataPtr, cTmpBuf);
+            break;
+        case SQL_C_SBIGINT:
+#ifndef unixcli
+            sprintf(cTmpBuf, "%I64d", *(__int64*)srcDataPtr);
+#else
+            sprintf(cTmpBuf, "%Ld", *(__int64*)srcDataPtr);
+#endif
+            break;
+        case SQL_C_INTERVAL_MONTH:
+            switch (ODBCDataType)
+            {
+               case SQL_INTERVAL_MONTH:
+               case SQL_INTERVAL_YEAR_TO_MONTH:
+                   runFunc = 1;
+                   break;
+               default:
+                    return IDS_07_006;
+            }
+            break;
+        case SQL_C_INTERVAL_YEAR:
+            switch (ODBCDataType)
+            {
+                case SQL_INTERVAL_YEAR:
+                case SQL_INTERVAL_YEAR_TO_MONTH:
+                   runFunc = 1;
+                   break; 
+                default:
+                    return IDS_07_006;
+            }
+            break;
+        case SQL_C_INTERVAL_YEAR_TO_MONTH:
+            switch (ODBCDataType)
+            {
+               case SQL_INTERVAL_YEAR:
+               case SQL_INTERVAL_MONTH:
+               case SQL_INTERVAL_YEAR_TO_MONTH:
+                   runFunc = 1;
+                   break;
+               default:
+                    return IDS_07_006;
+            }
+            break;
+        case SQL_C_INTERVAL_DAY:
+            switch (ODBCDataType)
+            {
+               case SQL_INTERVAL_DAY:
+               case SQL_INTERVAL_DAY_TO_HOUR:
+               case SQL_INTERVAL_DAY_TO_MINUTE:
+               case SQL_INTERVAL_DAY_TO_SECOND:
+                   runFunc = 1;
+                   break;
+               default:
+                    return IDS_07_006;
+            }
+            break;
+        case SQL_C_INTERVAL_HOUR:
+            switch (ODBCDataType)
+            {
+                case SQL_INTERVAL_HOUR:
+               case SQL_INTERVAL_DAY_TO_HOUR:
+               case SQL_INTERVAL_DAY_TO_MINUTE:
+               case SQL_INTERVAL_DAY_TO_SECOND:
+               case SQL_INTERVAL_HOUR_TO_MINUTE:
+               case SQL_INTERVAL_HOUR_TO_SECOND:
+                   runFunc = 1;
+                   break;
+               default:
+                    return IDS_07_006;
+            }
+            break;
+        case SQL_C_INTERVAL_MINUTE:
+            switch (ODBCDataType)
+            {
+                case SQL_INTERVAL_MINUTE:
+                case SQL_INTERVAL_DAY_TO_MINUTE:
+                case SQL_INTERVAL_DAY_TO_SECOND:
+                case SQL_INTERVAL_HOUR_TO_MINUTE:
+                case SQL_INTERVAL_HOUR_TO_SECOND:
+                case SQL_INTERVAL_MINUTE_TO_SECOND:
+                   runFunc = 1;
+                   break;
+                default:
+                    return IDS_07_006;
+            }
+            break;
+        case SQL_C_INTERVAL_SECOND:
+            switch (ODBCDataType)
+            {
+                case SQL_INTERVAL_SECOND:
+                case SQL_INTERVAL_DAY_TO_SECOND:
+                case SQL_INTERVAL_HOUR_TO_SECOND:
+                case SQL_INTERVAL_MINUTE_TO_SECOND:
+                    runFunc = 1;
+                    break;
+                default:
+                    return IDS_07_006;
+            }
+            break;
+        case SQL_C_INTERVAL_DAY_TO_HOUR:
+            switch (ODBCDataType)
+            {
+                case SQL_INTERVAL_DAY:
+                            case SQL_INTERVAL_HOUR:
+               case SQL_INTERVAL_DAY_TO_HOUR:
+               case SQL_INTERVAL_DAY_TO_MINUTE:
+               case SQL_INTERVAL_DAY_TO_SECOND:
+               case SQL_INTERVAL_HOUR_TO_MINUTE:
+               case SQL_INTERVAL_HOUR_TO_SECOND:
+                   runFunc = 1;
+                   break;
+               default:
+                    return IDS_07_006;
+            }
+            break;
+        case SQL_C_INTERVAL_DAY_TO_MINUTE:
+            switch (ODBCDataType)
+            {
+                case SQL_INTERVAL_DAY:
+               case SQL_INTERVAL_HOUR:
+               case SQL_INTERVAL_MINUTE:
+               case SQL_INTERVAL_DAY_TO_HOUR:
+               case SQL_INTERVAL_DAY_TO_MINUTE:
+               case SQL_INTERVAL_DAY_TO_SECOND:
+               case SQL_INTERVAL_HOUR_TO_MINUTE:
+               case SQL_INTERVAL_HOUR_TO_SECOND:
+               case SQL_INTERVAL_MINUTE_TO_SECOND:
+                   runFunc = 1;
+                   break;
+                default:
+                    return IDS_07_006;
+            }
+            break;
+        case SQL_C_INTERVAL_DAY_TO_SECOND:
+            switch (ODBCDataType)
+            {
+                case SQL_INTERVAL_DAY:
+               case SQL_INTERVAL_HOUR:
+               case SQL_INTERVAL_MINUTE:
+               case SQL_INTERVAL_SECOND:
+               case SQL_INTERVAL_DAY_TO_HOUR:
+               case SQL_INTERVAL_DAY_TO_MINUTE:
+               case SQL_INTERVAL_DAY_TO_SECOND:
+               case SQL_INTERVAL_HOUR_TO_MINUTE:
+               case SQL_INTERVAL_MINUTE_TO_SECOND:
+                   runFunc = 1;
+                   break;
+                default:
+                    return IDS_07_006;
+            }
+            break;
+        case SQL_C_INTERVAL_HOUR_TO_MINUTE:
+            switch (ODBCDataType)
+            {
+                case SQL_INTERVAL_HOUR:
+               case SQL_INTERVAL_MINUTE:
+               case SQL_INTERVAL_DAY_TO_HOUR:
+               case SQL_INTERVAL_DAY_TO_MINUTE:
+               case SQL_INTERVAL_DAY_TO_SECOND:
+               case SQL_INTERVAL_HOUR_TO_MINUTE:
+               case SQL_INTERVAL_HOUR_TO_SECOND:
+               case SQL_INTERVAL_MINUTE_TO_SECOND:
+                   runFunc = 1;
+                   break;
+               default:
+                    return IDS_07_006;
+            }
+            break;
+        case SQL_C_INTERVAL_HOUR_TO_SECOND:
+            switch (ODBCDataType)
+            {
+                case SQL_INTERVAL_HOUR:
+
+                case SQL_INTERVAL_MINUTE:
+                case SQL_INTERVAL_SECOND:
+                case SQL_INTERVAL_DAY_TO_HOUR:
+                case SQL_INTERVAL_DAY_TO_MINUTE:
+                case SQL_INTERVAL_DAY_TO_SECOND:
+
+                case SQL_INTERVAL_HOUR_TO_MINUTE:
+                case SQL_INTERVAL_HOUR_TO_SECOND:
+                case SQL_INTERVAL_MINUTE_TO_SECOND:
+
+                    runFunc = 1;
+                    break;
+                default:
+                    return IDS_07_006;
+            }
+            break;
+        case SQL_C_INTERVAL_MINUTE_TO_SECOND:
+            switch (ODBCDataType)
+            {
+                case SQL_INTERVAL_MINUTE:
+                case SQL_INTERVAL_SECOND:
+                case SQL_INTERVAL_DAY_TO_MINUTE:
+                case SQL_INTERVAL_DAY_TO_SECOND:
+                case SQL_INTERVAL_HOUR_TO_MINUTE:
+                case SQL_INTERVAL_HOUR_TO_SECOND:
+                case SQL_INTERVAL_MINUTE_TO_SECOND:
+                    runFunc = 1;
+                    break;
+                default:
+                    return IDS_07_006;
+            }
+            break;
+        default:
+            return IDS_07_006;
+    }
+    if(runFunc)
+        retCode =  TmpBufferFitting(ODBCDataType,cTmpDataType,srcDataPtr,cTmpBuf);
+    if(retCode != SQL_SUCCESS)
+        return retCode;
+
+    if (DataPtr == NULL)
+    {
+        if(RWRSFormat == 0)
+            if ((retCode = CheckIntervalOverflow(cTmpBuf, ODBCDataType, targetLength, targetPrecision)) != SQL_SUCCESS)
+                return retCode;
+
+        if(RWRSFormat == 0)
+            InsertBlank(cTmpBuf, targetLength-strlen(cTmpBuf));
+
+        if(RWRSFormat == 0)
+        {
+            DataPtr = cTmpBuf;
+            DataLen = strlen(cTmpBuf);
+        }
+        else
+        {
+            retCode = Ascii_To_Interval_Helper(cTmpBuf,
+                    strlen(cTmpBuf),
+                    (char*)cTmpBuf2,
+                    targetLength,
+                    datetimeIntervalPrecision,
+                    targetPrecision,
+                    SQLDatetimeCode, //ODBCDataType - 100,
+                    &dataTruncatedWarning);
+
+            if(retCode != SQL_SUCCESS)
+                return retCode;
+
+            DataPtr = (char*)cTmpBuf2;
+            DataLen = targetLength;
+        }
+    }
+    if (Offset != 0)
+    {
+        if(DataLen>32767){
+            *(int *)targetDataPtr = DataLen;
+            outDataPtr = (unsigned char *)targetDataPtr + sizeof(int);
+        }
+        else{
+            *(unsigned short *)targetDataPtr = DataLen;
+            outDataPtr = (unsigned char *)targetDataPtr + sizeof(USHORT);
+        }
+    }
+    
+    memcpy(outDataPtr, DataPtr, DataLen);
+}
+
+
+
+
 
 unsigned long ODBC::ConvertCharToNumeric(SQLPOINTER srcDataPtr,
 								   SQLINTEGER srcLength,
