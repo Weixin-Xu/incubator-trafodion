@@ -1499,8 +1499,8 @@ unsigned long  ODBC::ConvertNumToNumSimple(SQLSMALLINT   CDataType,
     long           leadZeros       = 0;
     long           decimalDigits   = 0;
     BOOL           useDouble       = TRUE;
-    unsigned __int64  integralMax     = 0;//
-    unsigned __int64  decimalMax      = 0;// 
+    unsigned __int64  integralMax  = 0;
+    unsigned __int64  decimalMax   = 0;
     double         scaleOffset     = 0;
     char *         tempPtr         = NULL;
 
@@ -1526,6 +1526,27 @@ unsigned long  ODBC::ConvertNumToNumSimple(SQLSMALLINT   CDataType,
     }
     else
     {
+        switch (CDataType)
+        {
+            case SQL_C_INTERVAL_MONTH:
+            case SQL_C_INTERVAL_YEAR:
+            case SQL_C_INTERVAL_YEAR_TO_MONTH:
+            case SQL_C_INTERVAL_DAY:
+            case SQL_C_INTERVAL_HOUR:
+            case SQL_C_INTERVAL_MINUTE:
+            case SQL_C_INTERVAL_SECOND:
+            case SQL_C_INTERVAL_DAY_TO_HOUR:
+            case SQL_C_INTERVAL_DAY_TO_MINUTE:
+            case SQL_C_INTERVAL_DAY_TO_SECOND:
+            case SQL_C_INTERVAL_HOUR_TO_MINUTE:
+            case SQL_C_INTERVAL_HOUR_TO_SECOND:
+            case SQL_C_INTERVAL_MINUTE_TO_SECOND:
+                if(ODBCDataType == SQL_REAL || ODBCDataType == SQL_FLOAT ||ODBCDataType == SQL_DOUBLE)
+                    return IDS_07_006;
+            default:
+                break;
+        }
+
         switch (CDataType)
         {
             case SQL_C_WCHAR:
