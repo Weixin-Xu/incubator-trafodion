@@ -189,6 +189,10 @@ SQLRETURN DataTypeTransform(SQLSMALLINT  & cTmpDataType,SQLSMALLINT  CDataType,S
 SQLRETURN TmpBufferFitting(SQLSMALLINT ODBCDataType,SQLSMALLINT CDataType,SQLPOINTER    srcDataPtr,CHAR * cTmpBuf);
 
 
+void fitToSQL_INTERVAL_DAY_TO_SECOND(SQLSMALLINT CDataType,CHAR * cTmpBuf, SQL_INTERVAL_STRUCT *intervalTmp);
+
+
+void fitToSQL_INTERVAL_HOUR_TO_SECOND(SQLSMALLINT CDataType,CHAR * cTmpBuf, SQL_INTERVAL_STRUCT *intervalTmp);
 unsigned long  ConvertAnyToTimeIntervalType(SQLINTEGER     ODBCAppVersion,
         SQLSMALLINT   CDataType,
         SQLPOINTER    srcDataPtr,
