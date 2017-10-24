@@ -34,6 +34,7 @@
 #include <sqlext.h>
 #include "drvrglobal.h"
 #include "charsetconv.h"
+#include "cdesc.h"
 
 // interval datatypes
 #define REC_MIN_INTERVAL        195
@@ -58,15 +59,8 @@ unsigned long ConvertCToSQL(SQLINTEGER	ODBCAppVersion,
 							SQLSMALLINT	CDataType,
 							SQLPOINTER	srcDataPtr,
 							SQLINTEGER	srcLength,
-							SQLSMALLINT	ODBCDataType,
-							SQLSMALLINT	SQLDataType,
-							SQLSMALLINT	SQLDatetimeCode,
 							SQLPOINTER	targetDataPtr,
-							SQLINTEGER	targetLength,
-							SQLINTEGER	targetPrecision,
-							SQLSMALLINT	targetScale,
-							SQLSMALLINT targetUnsigned,
-							SQLINTEGER      targetCharSet,
+                            CDescRec    *targetDescPtr,
 							BOOL		byteSwap,
 //							FPSQLDriverToDataSource fpSQLDriverToDataSource = NULL,
 //							DWORD		translateOption = 0,
