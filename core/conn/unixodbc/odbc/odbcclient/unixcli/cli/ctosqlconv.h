@@ -71,6 +71,9 @@ unsigned long ConvertCToSQL(SQLINTEGER	ODBCAppVersion,
 							BOOL		RWRSFormat = 0,
 							SQLINTEGER datetimeIntervalPrecision = 0);
 
+
+unsigned long convToSQLBool(SQLPOINTER srcDataPtr, SQLINTEGER    srcLength,SQLSMALLINT CDataType, SQLPOINTER targetDataPtr);
+
 SQLRETURN   MemToNumeric(SQLPOINTER  DataPtr,
             SQLINTEGER &    DataLen,
             CDescRec*       targetDescPtr,

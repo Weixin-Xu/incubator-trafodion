@@ -197,194 +197,78 @@ unsigned long ODBC::ConvertCToSQL(SQLINTEGER	ODBCAppVersion,
     }
     else
         RESET_TRACE();
-    /*
-       1. Because MS programs do not support BIGINT type, the server has to convert it to NUMERIC:
-       ODBCDataType = SQL_NUMERIC;
-       ODBCPrecision = 19;
-       SignType = TRUE;
-       Before conversion we have to change it back to:
-       ODBCDataType = SQL_BIGINT;
 
-       2. Because ODBC does not support unsigned types for SMALLINT and INTEGER,
-       the server has to convert it to:
-       a)SQLTYPECODE_SMALLINT_UNSIGNED:
-       ODBCPrecision = 10;
-       ODBCDataType = SQL_INTEGER;
-       SignType = TRUE;
-       b)SQLTYPECODE_INTEGER_UNSIGNED:
-       ODBCPrecision = 19;
-       ODBCDataType = SQL_NUMERIC;
-       SignType = TRUE;
+    SQLSMALLINT tODBCDataType = targetDescPtr->m_ODBCDataType;
+    if (targetDescPtr->m_ODBCDataType == SQL_NUMERIC && targetDescPtr->m_SQLDataType == SQLTYPECODE_LARGEINT &&
+            targetDescPtr->m_ODBCPrecision == 19 && targetDescPtr->m_ODBCScale ==0)
+    {
+        targetDescPtr->m_ODBCDataType  = SQL_BIGINT;
+    }
 
-       Before conversion we have to change it back to datatype, precision and sign described by SQL:
-       a)
-       ODBCPrecision = 5;
-       ODBCDataType = SQL_SMALLINT;
-       SignType = FALSE;
-       b)
-       ODBCPrecision = 10;
-       ODBCDataType = SQL_INTEGER;
-       SignType = FALSE;
-       */
-    /* 
-       tODBCDataType = ODBCDataType;
-       if (ODBCDataType == SQL_NUMERIC && SQLDataType == SQLTYPECODE_LARGEINT &&
-       targetPrecision == 19 && targetScale==0)
-       {
-       ODBCDataType = SQL_BIGINT;
-       }
+    if (targetDescPtr->m_ODBCDataType == SQL_INTEGER && targetDescPtr->m_SQLDataType == SQLTYPECODE_SMALLINT_UNSIGNED &&
+            targetDescPtr->m_ODBCPrecision == 10 && targetDescPtr->m_ODBCScale == 0)
+    {
+        targetDescPtr->m_ODBCPrecision = 5;
+        targetDescPtr->m_ODBCDataType  = SQL_SMALLINT;
+        targetDescPtr->m_SQLUnsigned   = true;
+    }
 
-       if (ODBCDataType == SQL_INTEGER && SQLDataType == SQLTYPECODE_SMALLINT_UNSIGNED &&
-       targetPrecision == 10 && targetScale==0)
-       {
-       targetPrecision = 5;
-       ODBCDataType = SQL_SMALLINT;
-       targetUnsigned = true;
-       }
 
-       if (ODBCDataType == SQL_NUMERIC && SQLDataType == SQLTYPECODE_INTEGER_UNSIGNED &&
-       targetPrecision == 19 && targetScale==0)
-       {
-       targetPrecision = 10;
-       ODBCDataType = SQL_INTEGER;
-       targetUnsigned = true;
-       }
+    if (targetDescPtr->m_ODBCDataType == SQL_NUMERIC && targetDescPtr->m_SQLDataType == SQLTYPECODE_SMALLINT_UNSIGNED &&
+            targetDescPtr->m_ODBCPrecision == 19 && targetDescPtr->m_ODBCScale == 0)
+    {
+        targetDescPtr->m_ODBCPrecision = 10;
+        targetDescPtr->m_ODBCDataType  = SQL_INTEGER;
+        targetDescPtr->m_SQLUnsigned   = true;
+    }
 
-       if (ODBCDataType == SQL_BIGINT && SQLDataType == SQLTYPECODE_INTEGER_UNSIGNED &&
-       targetPrecision == 19 && targetScale==0)
-       {
-       targetPrecision = 10;
-       ODBCDataType = SQL_INTEGER;
-       targetUnsigned = true;
-       }
+    if (targetDescPtr->m_ODBCDataType == SQL_BIGINT && targetDescPtr->m_SQLDataType == SQLTYPECODE_SMALLINT_UNSIGNED &&
+            targetDescPtr->m_ODBCPrecision == 19 && targetDescPtr->m_ODBCScale == 0)
+    {
+        targetDescPtr->m_ODBCPrecision = 10;
+        targetDescPtr->m_ODBCDataType  = SQL_INTEGER;
+        targetDescPtr->m_SQLUnsigned   = true;
+    }
 
-       if (CDataType == SQL_C_DEFAULT)
-       {
-       getCDefault(tODBCDataType, ODBCAppVersion, targetCharSet, CDataType);
-       if (ODBCAppVersion >= 3 && targetUnsigned)
-       {
-       switch(CDataType)
-       {
-       case SQL_C_SHORT:
-       case SQL_C_SSHORT:
-       CDataType = SQL_C_USHORT;
-       break;
-       case SQL_C_TINYINT:
-       case SQL_C_STINYINT:
-       CDataType = SQL_C_UTINYINT;
-       break;
-       case SQL_C_LONG:
-       case SQL_C_SLONG:
-       CDataType = SQL_C_ULONG;
-       break;
-       }
-       }
-       }
-       */
-    //--------------------------------------------------------------------------------------
-    /*
-       if (errorMsg)
-     *errorMsg = '\0';
-    //if (targetPrecision < 19)
-    if( !(((SQLDataType == SQLTYPECODE_NUMERIC) && (targetPrecision > 18)) ||
-    ((SQLDataType == SQLTYPECODE_NUMERIC_UNSIGNED) && (targetPrecision > 9))))
-    getMaxNum(targetPrecision, targetScale, integralMax, decimalMax);
-    */
 
+    if (CDataType == SQL_C_DEFAULT)
+    {
+        getCDefault(tODBCDataType, ODBCAppVersion, targetDescPtr->m_SQLCharset, CDataType);
+        if (ODBCAppVersion >= 3 && targetDescPtr->m_SQLUnsigned)
+        {
+            switch(CDataType)
+            {
+                case SQL_C_SHORT:
+                case SQL_C_SSHORT:
+                    CDataType = SQL_C_USHORT;
+                    break;
+                case SQL_C_TINYINT:
+                case SQL_C_STINYINT:
+                    CDataType = SQL_C_UTINYINT;
+                    break;
+                case SQL_C_LONG:
+                case SQL_C_SLONG:
+                    CDataType = SQL_C_ULONG;
+                    break;
+            }
+        }
+    }
+
+    if (errorMsg)
+        *errorMsg = '\0';
+    
     switch (targetDescPtr->m_ODBCDataType)
     {
         case SQL_VARCHAR:
         case SQL_LONGVARCHAR:
         case SQL_WVARCHAR:
         case SQL_CHAR:
-            /*if( SQLDataType == SQLTYPECODE_BOOLEAN )
-              {
-              switch (CDataType)
-              {
-              case SQL_C_WCHAR:
-              if (iconv->isAppUTF16())
-              {
-              if (srcLength != SQL_NTS)
-              srcLength = srcLength/2;
-              if (iconv->WCharToUTF8((UChar*)srcDataPtr, srcLength, srcDataLocale, sizeof(srcDataLocale), (int*)&translateLength, (char*)errorMsg) != SQL_SUCCESS)
-              return IDS_193_DRVTODS_ERROR;
-              srcDataPtr = srcDataLocale;
-              srcLength = translateLength;
-              }
-              case SQL_C_CHAR:
-              retCode = ConvertCharToNumeric(srcDataPtr, srcLength, dTmp);
-              if (retCode != SQL_SUCCESS)
-              return retCode;
-              break;
-              case SQL_C_SHORT:
-              case SQL_C_SSHORT:
-              dTmp = *(SSHORT *)srcDataPtr;
-              break;
-              case SQL_C_USHORT:
-              dTmp = *(USHORT *)srcDataPtr;
-              break;
-              case SQL_C_TINYINT:
-              case SQL_C_STINYINT:
-              dTmp = *(SCHAR *)srcDataPtr;
-              break;
-              case SQL_C_UTINYINT:
-              case SQL_C_BIT:
-              dTmp = *(UCHAR *)srcDataPtr;
-              break;
-              case SQL_C_SLONG:
-              case SQL_C_LONG:
-              dTmp = *(SLONG_P *)srcDataPtr;
-              break;
-              case SQL_C_ULONG:
-              dTmp = *(ULONG_P *)srcDataPtr;
-              break;
-              case SQL_C_FLOAT:
-              dTmp = *(SFLOAT *)srcDataPtr;
-              break;
-              case SQL_C_DOUBLE:
-              dTmp = *(DOUBLE *)srcDataPtr;
-              break;
-              case SQL_C_BINARY:
-              DataPtr = srcDataPtr;
-              break;
-              case SQL_C_DEFAULT:
-              if (ODBCAppVersion >= SQL_OV_ODBC3)
-              DataPtr = srcDataPtr;
-              else
-              {
-              retCode = ConvertCharToNumeric(srcDataPtr, srcLength, dTmp);
-              if (retCode!= SQL_SUCCESS)
-              return retCode;
-              }
-              break;
-              case SQL_C_SBIGINT:
-              dTmp = *(__int64 *)srcDataPtr;
-              break;
-              case SQL_C_NUMERIC:
-              ConvertCNumericToChar((SQL_NUMERIC_STRUCT*)srcDataPtr, cTmpBuf);
-              srcLength = strlen(cTmpBuf);
-              retCode = ConvertCharToNumeric((char*)cTmpBuf, srcLength, dTmp);
-              if (retCode != SQL_SUCCESS)
-              return retCode;
-              break;
-              default:
-            return IDS_07_006;
-    }
-    if (DataPtr == NULL)
-    {
-        if(dTmp < 0)
-            return IDS_22_003_02;
-        if(dTmp > 1)
-            return IDS_22_003;
-        tTmp = (SCHAR)dTmp;
-        if(dTmp != tTmp)
-            retCode = IDS_01_S07;
-        DataPtr = &tTmp;
-        DataLen = sizeof(SCHAR);
-    }
-    break;
-    }
-    */
+            if( targetDescPtr->m_SQLDataType == SQLTYPECODE_BOOLEAN )
+            {
+                retCode = convToSQLBool(srcDataPtr,srcLength, CDataType, targetDataPtr);
+
+                break;
+            }
         case SQL_WCHAR:
         retCode = ConvertAnyTypeToCharsSimple(ODBCAppVersion,
                 CDataType,
@@ -512,6 +396,84 @@ unsigned long ODBC::ConvertCToSQL(SQLINTEGER	ODBCAppVersion,
     }
     return retCode;
 }
+
+unsigned long ODBC::convToSQLBool(SQLPOINTER srcDataPtr,SQLINTEGER    srcLength, SQLSMALLINT CDataType, SQLPOINTER targetDataPtr)
+{
+
+    CHAR            cTmpBuf[256]    = {0};
+    double          dTmp        = 0;
+    char            temptarget  = 0;
+    unsigned long   retCode     = SQL_SUCCESS;
+    errno                       = 0;
+
+    switch (CDataType)
+    {
+    case SQL_C_CHAR:
+    case SQL_C_WCHAR:
+        temptarget = strtol((char*)srcDataPtr,NULL,10);
+        if (errno == ERANGE)
+            return IDS_22_003;
+        break;
+
+    case SQL_C_TINYINT:
+    case SQL_C_STINYINT:
+        temptarget = *(SCHAR *)srcDataPtr;
+        break;
+
+    case SQL_C_BIT:
+    case SQL_C_UTINYINT:
+        temptarget = *(UCHAR *)srcDataPtr;
+        break;
+
+    case SQL_C_SHORT:
+    case SQL_C_SSHORT:
+        temptarget = *(SSHORT *)srcDataPtr;
+        break;
+
+    case SQL_C_USHORT:
+        temptarget = *(USHORT *)srcDataPtr;
+        break;
+
+    case SQL_C_LONG:
+    case SQL_C_SLONG:
+        temptarget = *(SLONG_P *)srcDataPtr;
+        break;
+    case SQL_C_ULONG:
+        temptarget = *(ULONG_P *)srcDataPtr;
+        break;
+
+    case SQL_C_SBIGINT:
+        temptarget = *(__int64 *)srcDataPtr;
+        break;
+
+    case SQL_C_UBIGINT:
+        temptarget = *(unsigned __int64 *)srcDataPtr;
+        break;
+
+    case SQL_C_NUMERIC:
+        retCode = ConvertCNumericToChar((SQL_NUMERIC_STRUCT*)srcDataPtr, cTmpBuf);
+        if (retCode != SQL_SUCCESS)
+            return retCode;
+        retCode = ConvertCharToNumeric((char*)cTmpBuf, srcLength, dTmp);
+        if (retCode != SQL_SUCCESS)
+            return retCode;
+        temptarget = dTmp;
+        break;
+
+    default:
+        return IDS_07_006;
+    }
+
+    if (temptarget < 0)
+        return IDS_22_003_02;
+    if (temptarget > 1)
+        return IDS_22_003;
+    
+    memcpy(targetDataPtr, &temptarget, sizeof(SCHAR));
+
+    return SQL_SUCCESS;
+}
+
 
 
 SQLRETURN ODBC::MemToNumeric(SQLPOINTER  DataPtr,
@@ -734,13 +696,18 @@ unsigned long  ODBC::ConvertAnyToNumeric(SQLINTEGER    ODBCAppVersion,
     SQLPOINTER     DataPtr         = NULL;
     BOOL           useDouble       = TRUE;
     long           leadZeros       = 0;
-    unsigned long  integralMax       = 0;//
-    unsigned long  decimalMax        = 0;// 
+    unsigned __int64  integralMax       = 0;//
+    unsigned __int64  decimalMax        = 0;// 
     BOOL           negative        = FALSE;
     long           decimalDigits   = 0;
 
 
+    
+	if( !(((SQLDataType == SQLTYPECODE_NUMERIC) && (targetPrecision > 18)) ||
+		((SQLDataType == SQLTYPECODE_NUMERIC_UNSIGNED) && (targetPrecision > 9))))
+	getMaxNum(targetPrecision, targetScale, integralMax, decimalMax);
 
+ 
 
     // sol 10-0820-5315
     // for R2.3 SP2 release BigNum is only supported for the following data type
@@ -1491,10 +1458,16 @@ unsigned long  ODBC::ConvertNumToNumSimple(SQLSMALLINT   CDataType,
     long           leadZeros       = 0;
     long           decimalDigits   = 0;
     BOOL           useDouble       = TRUE;
-    unsigned long  integralMax     = 0;//
-    unsigned long  decimalMax      = 0;// 
+    unsigned __int64  integralMax     = 0;//
+    unsigned __int64  decimalMax      = 0;// 
     double         scaleOffset     = 0;
     char *         tempPtr         = NULL;
+
+
+    if( !(((SQLDataType == SQLTYPECODE_NUMERIC) && (targetPrecision > 18)) ||
+                ((SQLDataType == SQLTYPECODE_NUMERIC_UNSIGNED) && (targetPrecision > 9))))
+        getMaxNum(targetPrecision, targetScale, integralMax, decimalMax);
+
 
 
     if(ODBCDataType == SQL_REAL && CDataType == SQL_C_NUMERIC)
