@@ -505,6 +505,7 @@ SQLRETURN ODBC::MemToNumeric(SQLPOINTER  DataPtr,
     SLONG_P        lTmp            = 0;
     __int64        tempVal64       = 0;
     __int64        tempScaleVal64  = 0;
+    unsigned  __int64 uVal64       = 0;
     short          i               = 0;
     long           decimalDigits   = 0;
     unsigned long  retCode         = SQL_SUCCESS;
@@ -562,6 +563,11 @@ SQLRETURN ODBC::MemToNumeric(SQLPOINTER  DataPtr,
                     break;
                 case SQLTYPECODE_LARGEINT:
                     tempVal64 = (__int64)dTmp;
+                    DataPtr = &tempVal64;
+                    DataLen = sizeof(tempVal64);
+                    break;
+                case SQLTYPECODE_LARGEINT_UNSIGNED:
+                    tempVal64 = (unsigned __int64)dTmp;
                     DataPtr = &tempVal64;
                     DataLen = sizeof(tempVal64);
                     break;
@@ -652,6 +658,18 @@ SQLRETURN ODBC::MemToNumeric(SQLPOINTER  DataPtr,
                         retCode = IDS_01_S07;
                     DataPtr = &lTmp;
                     DataLen = sizeof(lTmp);
+                    break;
+
+                case SQLTYPECODE_LARGEINT_UNSIGNED:
+                    if(tempVal64<0)
+                        return IDS_22_003_02;
+                    if((unsigned __int64)tempVal64 > ULLONG_MAX)
+                        return IDS_22_003;
+                    uVal64 = (unsigned __int64)tempVal64;
+                    if(tempVal64 != uVal64)
+                        retCode = IDS_01_S07;
+                    DataPtr = &uVal64;
+                    DataLen = sizeof(uVal64);
                     break;
                 case SQLTYPECODE_LARGEINT:
                 default:
@@ -968,6 +986,18 @@ unsigned long  ODBC::ConvertAnyToNumeric(SQLINTEGER    ODBCAppVersion,
 
             useDouble = FALSE;
             break;
+        case SQL_C_UBIGINT:
+            integralPart = *(unsigned __int64*)srcDataPtr;
+
+            negative = (integralPart < 0)? 1: 0;
+            integralPart = (integralPart < 0)? -integralPart: integralPart;
+            decimalPart = 0;
+            leadZeros = 0;
+            if ( integralPart > integralMax )
+                return IDS_22_003;
+
+            useDouble = FALSE;
+            break;
         case SQL_C_INTERVAL_MONTH:
             intervalTmp = (SQL_INTERVAL_STRUCT *)srcDataPtr;
             if (intervalTmp->interval_sign == SQL_TRUE)
@@ -1074,6 +1104,7 @@ SQLRETURN ODBC::MemNumToNum(SQLPOINTER  DataPtr,
     char *         tempPtr         = NULL;
     int            dec             = 0;
     int            sign            = 0;
+    unsigned __int64 uVal64        = 0;
 
     if (DataPtr == NULL)
     {
@@ -1373,6 +1404,17 @@ SQLRETURN ODBC::MemNumToNum(SQLPOINTER  DataPtr,
                     DataPtr = cTmpBuf;
                     DataLen = strlen(cTmpBuf);
                     break;
+               case SQLTYPECODE_LARGEINT_UNSIGNED:
+                    if(tempVal64<0)
+                        return IDS_22_003_02;
+                    if((unsigned __int64)tempVal64 > ULLONG_MAX)
+                        return IDS_22_003;
+                    uVal64 = (unsigned __int64)tempVal64;
+                    if(tempVal64 != uVal64)
+                        retCode = IDS_01_S07;
+                    DataPtr = &uVal64;
+                    DataLen = sizeof(uVal64);
+                    break;
                 case SQLTYPECODE_LARGEINT:
                 default:
                     DataPtr = &tempVal64;
@@ -1592,6 +1634,29 @@ unsigned long  ODBC::ConvertNumToNumSimple(SQLSMALLINT   CDataType,
                 }
                 signedInteger = TRUE;
                 break;
+            case SQL_C_UBIGINT:
+                if (ODBCDataType != SQL_DECIMAL)
+                {
+                    dTmp = *(unsigned __int64 *)srcDataPtr;
+                }
+                else //  this is a patch should remove dTmp (double) and change it to tempVal64 (__int64) like in SQL_BIGINT.
+                {
+                    leadZeros = 0;
+                    decimalPart = 0;
+                    integralPart = 0;
+                    negative = FALSE;
+                    integralPart = *(unsigned __int64 *)srcDataPtr;
+                    if (integralPart < 0)
+                    {
+                        integralPart = -integralPart;
+                        negative = TRUE;
+                    }
+                    useDouble = FALSE;
+                }
+
+                signedInteger = FALSE;
+                break;
+
             case SQL_C_FLOAT:
                 dTmp = *(SFLOAT *)srcDataPtr;
                 break;
@@ -2047,6 +2112,10 @@ unsigned long  ODBC::ConvertAnyTypeToCharsSimple(SQLINTEGER    ODBCAppVersion,
             sprintf(cTmpBuf, "%Ld", *(__int64*)srcDataPtr);
 #endif
             break;
+        case SQL_C_UBIGINT:
+           sprintf(cTmpBuf, "%llu", *(unsigned __int64*)srcDataPtr);
+            break;
+
         case SQL_C_INTERVAL_MONTH:
             intervalTmp = (SQL_INTERVAL_STRUCT *)srcDataPtr;
             if (intervalTmp->interval_sign == SQL_TRUE)
@@ -2231,6 +2300,7 @@ unsigned long  ODBC::ConvertToBigint(SQLINTEGER    ODBCAppVersion,
     CHAR           cTmpBuf[256]    = {0};
     SQL_INTERVAL_STRUCT *intervalTmp  = NULL;
 
+
     switch (CDataType)
     {
         case SQL_C_WCHAR:
@@ -2295,6 +2365,8 @@ unsigned long  ODBC::ConvertToBigint(SQLINTEGER    ODBCAppVersion,
         case SQL_C_SBIGINT:
             tempVal64 = *(__int64 *)srcDataPtr;
             break;
+        case SQL_C_UBIGINT:
+            tempVal64 = *(unsigned __int64 *)srcDataPtr;
         case SQL_C_NUMERIC:
             ConvertCNumericToChar((SQL_NUMERIC_STRUCT*)srcDataPtr, cTmpBuf);
             srcLength = strlen(cTmpBuf);
@@ -3591,6 +3663,14 @@ unsigned long  ODBC::ConvertAnyToTimeIntervalType(SQLINTEGER       ODBCAppVersio
             sprintf(cTmpBuf, "%Ld", *(__int64*)srcDataPtr);
 #endif
             break;
+        case SQL_C_UBIGINT:
+#ifndef unixcli
+            sprintf(cTmpBuf, "%I64u", *(unsigned __int64*)srcDataPtr);
+#else
+            sprintf(cTmpBuf, "%Lu", *(unsigned __int64*)srcDataPtr);
+#endif
+            break;
+
         case SQL_C_INTERVAL_MONTH:
             switch (ODBCDataType)
             {
