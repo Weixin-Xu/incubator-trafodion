@@ -36,6 +36,34 @@
 
 #define MAXCHARLEN 32768 //32K
 
+// for server2008 when using function pow() then throws STATUS_ILLEGAL_INSTRUCTION
+__int64 pow(int base, short scale)
+{
+	DWORD dwVersion = 0;
+	DWORD dwBuild = 0;
+
+	dwVersion = GetVersion();
+
+	// Get the build number.
+
+	if (dwVersion < 0x80000000)
+		dwBuild = (DWORD)(HIWORD(dwVersion));
+
+	__int64 retValue = 1;
+	if (dwBuild == 7600)
+	{
+		scale = scale > 18 ? 18 : scale;
+		for (int i = 0; i < scale; i++)
+			retValue = retValue * 10;
+	}
+	else
+	{
+		retValue = pow((double)base, scale);
+	}
+
+	return retValue;
+}
+
 extern short convDoItMxcs(char * source,
 						  long sourceLen,
 						  short sourceType,
